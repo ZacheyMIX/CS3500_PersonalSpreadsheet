@@ -11,6 +11,6 @@ class test
     }
     static void Main(String[] args)
     {
-        Console.WriteLine(Evaluator.Evaluate("abc + 9 + 3 * a4", simpleLookUp));
+        Console.WriteLine(Evaluator.Evaluate("abc + 9 + 9 / 3", simpleLookUp));
     }
 }

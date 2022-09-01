@@ -13,25 +13,39 @@ namespace FormulaEvaluator
             int n;
             bool isNumeric;
             string trim;
-            Stack<int> intStack = new Stack<int>();
-            Stack<string> operatorStack = new Stack<string>();
-
+            string operatorValue;
+            int num;
+            int currentValue;
+            int val;
+            Stack<int> valStack = new Stack<int>();
+            Stack<string> opStack = new Stack<string>();
             foreach(string substring in substrings)
             {
                 trim = String.Concat(substring.Where(c => !char.IsWhiteSpace(c)));
                 isNumeric = int.TryParse(trim, out n);
                 if (isNumeric)
                 {
-                    intStack.Push(int.Parse(trim));
+                    currentValue = int.Parse(trim);
+                    if(opStack.Peek() is "*" || opStack.Peek() is "/")
+                    {
+                        num = valStack.Pop();
+                        if(opStack.Pop() is "*")
+                            val = num * currentValue;
+                        else
+                            val = num / currentValue;
+                        Console.WriteLine(val);
+                        valStack.Push(val);
+                    }
+                    valStack.Push(int.Parse(trim));
                 }
                 else if (substring is "*" || substring is "/" || substring is "+" || substring is "-")
                 {
-                    operatorStack.Push(trim);
+                    opStack.Push(trim);
                 }
                 else
                 {
                     int varVal = variableEvaluator(substring);
-                    intStack.Push(varVal);
+                    valStack.Push(varVal);
                 }              
             }
             return 0;
