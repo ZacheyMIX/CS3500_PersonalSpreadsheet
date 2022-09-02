@@ -9,7 +9,7 @@ class test
     {
         if (x == "a4")
         {
-            return 1;
+            return 21;
         }
         else if (x == "a1")
         {
@@ -20,6 +20,6 @@ class test
     }
     static void Main(String[] args)
     {
-        Console.WriteLine(Evaluator.Evaluate("9 + (9 + 3 / 2 - 3) * a1", simpleLookUp));
+        Console.WriteLine(Evaluator.Evaluate("9 + (9 + 3 / 2 - 3) * a4", simpleLookUp));
     }
 }
