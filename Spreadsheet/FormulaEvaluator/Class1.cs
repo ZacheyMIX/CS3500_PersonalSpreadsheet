@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using System.Collections.Generic;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace FormulaEvaluator
 {
@@ -25,16 +26,24 @@ namespace FormulaEvaluator
             //The stack that contains operations
             Stack<string> opStack = new Stack<string>();
             //Checks each token in the substring and evaluates the final result
+            
+            //A for loop that trims all the tokens of whitespace
+            for (int i = 0; i < substrings.Length; i++)
+            {
+                substrings[i] = String.Concat(substrings[i].Where(c => !char.IsWhiteSpace(c)));
+
+            }
+            //Afterwards, deletes any empty tokens from substrings
+            substrings = substrings.Where(x => !string.IsNullOrEmpty(x)).ToArray();
             foreach (string substring in substrings)
             {
                 //Trims the token of any whitespace
-                trim = String.Concat(substring.Where(c => !char.IsWhiteSpace(c)));
                 //Checks if the token is numeric and applies the result to isNumeric
-                isNumeric = int.TryParse(trim, out n);
+                isNumeric = int.TryParse(substring, out n);
                 if (isNumeric)
                 {
                     //Parses the current token into an integer
-                    currentValue = int.Parse(trim);
+                    currentValue = int.Parse(substring);
 
                     //If the operator in the opStack is * or / peform an operation
                     //With that operator accordingly with the value popped from the stack and the current value
@@ -46,49 +55,27 @@ namespace FormulaEvaluator
                     else
                         valStack.Push(currentValue);
                 }
-                else if (trim is "+" || trim is "-")
+                else if (substring is "+" || substring is "-")
                 {
-                    //Checks if the operator stack is empty
-                    if (opStack.Count == 0)
+                    if (StackExtensions.IsOnTop(opStack, "+") || StackExtensions.IsOnTop(opStack, "-"))
                     {
-                        opStack.Push(trim);
-                    }
-                    else if (opStack.Peek() is "+" || opStack.Peek() is "-")
-                    {
-                        if (opStack.Pop() is "+")
-                            val = valStack.Pop() + valStack.Pop();
-                        else
-                            val = valStack.Pop() - valStack.Pop();
-                        valStack.Push(val);
-                        opStack.Push(trim);
+                        StackExtensions.PushResult(valStack, substring, 0);
+                        opStack.Push(substring);
                     }
                     else
-                        opStack.Push(trim);
+                        opStack.Push(substring);
                 }
-                else if (trim is "*" || trim is "/" || trim is "(")
+                else if (substring is "*" || substring is "/" || substring is "(")
                 {
-                    opStack.Push(trim);
+                    opStack.Push(substring);
                 }
-                else if (trim is ")")
+                else if (substring is ")")
                 {
-                    if (opStack.Count is 0 || valStack.Count >= 2)
-                    {
-
-                    }
-                    else if (opStack.Peek() is "+" || opStack.Peek() is "-")
-                    {
-                        if (opStack.Pop() is "+")
-
-                            val = valStack.Pop() + valStack.Pop();
-                        else
-                            val = valStack.Pop() - valStack.Pop();
-
-                        valStack.Push(val);
-                    }
+                    StackExtensions.PushResult(valStack, opStack.Pop(), 0);
                 }
                 else
                 {
-                    currentValue = variableEvaluator(trim);
+                    currentValue = variableEvaluator(substring);
                     if (opStack.Count is 0)
                     {
                         valStack.Push(currentValue);
@@ -140,6 +127,16 @@ namespace FormulaEvaluator
             else if(c is "/")
             {
                 finalVal = stack.Pop() / val;
+                stack.Push(finalVal);
+            }
+            else if(c is "+")
+            {
+                finalVal = stack.Pop() + stack.Pop();
+                stack.Push(finalVal);
+            }
+            else if(c is "-")
+            {
+                finalVal = stack.Pop() + stack.Pop();
                 stack.Push(finalVal);
             }
 

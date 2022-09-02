@@ -20,6 +20,6 @@ class test
     }
     static void Main(String[] args)
     {
-        Console.WriteLine(Evaluator.Evaluate("9 + 9 / a1", simpleLookUp));
+        Console.WriteLine(Evaluator.Evaluate("9 + (9 / a1)", simpleLookUp));
     }
 }
