@@ -7,10 +7,19 @@ class test
      */
     public static int simpleLookUp(String x)
     {
-        return 0;
+        if (x == "a4")
+        {
+            return 1;
+        }
+        else if (x == "a1")
+        {
+            return 3;
+        }
+        else
+            throw new ArgumentException();
     }
     static void Main(String[] args)
     {
-        Console.WriteLine(Evaluator.Evaluate("abc + 9 + 9 / 3", simpleLookUp));
+        Console.WriteLine(Evaluator.Evaluate("9 + 9 / a1", simpleLookUp));
     }
 }
