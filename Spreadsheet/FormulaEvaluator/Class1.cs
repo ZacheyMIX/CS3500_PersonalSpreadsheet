@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using static System.Net.Mime.MediaTypeNames;
+using System.Collections;
 
 namespace FormulaEvaluator
 {
@@ -15,8 +16,6 @@ namespace FormulaEvaluator
             int n;
             //A boolean that checks if a token is an integer or not
             bool isNumeric;
-            //A string used as the current token in the search but without white space
-            string trim;
             //The value at the current token through the search
             int currentValue;
             //Results of operations done
@@ -59,7 +58,7 @@ namespace FormulaEvaluator
                 {
                     if (StackExtensions.IsOnTop(opStack, "+") || StackExtensions.IsOnTop(opStack, "-"))
                     {
-                        StackExtensions.PushResult(valStack, substring, 0);
+                        StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
                         opStack.Push(substring);
                     }
                     else
@@ -71,7 +70,8 @@ namespace FormulaEvaluator
                 }
                 else if (substring is ")")
                 {
-                    StackExtensions.PushResult(valStack, opStack.Pop(), 0);
+                    StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
+                    opStack.Pop();
                 }
                 else
                 {
@@ -96,7 +96,7 @@ namespace FormulaEvaluator
                         valStack.Push(currentValue);
                 }
             }
-            if (opStack.Count > 0)
+            if (opStack.Count > 0 && valStack.Count > 1)
             {
                 val = valStack.Pop();
                 if (opStack.Pop() is "+")
@@ -126,21 +126,21 @@ namespace FormulaEvaluator
             }
             else if(c is "/")
             {
+                if (val is 0)
+                    throw new ArgumentException();
                 finalVal = stack.Pop() / val;
                 stack.Push(finalVal);
             }
             else if(c is "+")
             {
-                finalVal = stack.Pop() + stack.Pop();
+                finalVal = stack.Pop() + val;
                 stack.Push(finalVal);
             }
             else if(c is "-")
             {
-                finalVal = stack.Pop() + stack.Pop();
+                finalVal = stack.Pop() - val;
                 stack.Push(finalVal);
             }
-
-        }
-
         }
     }
+}
