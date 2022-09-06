@@ -48,12 +48,19 @@ namespace SpreadsheetUtilities
      */
     public class DependencyGraph
     {
+        private int pairSize;
+        private ArrayList dependencies;
+        private ArrayList dependents;
+        private ArrayList pairs;
 
         /// <summary>
         /// Creates an empty DependencyGraph.
         /// </summary>
         public DependencyGraph(){
-
+            dependencies = new ArrayList();
+            dependents = new ArrayList();
+            pairs = new ArrayList();
+            pairSize = 0;
         }
 
 
@@ -61,8 +68,8 @@ namespace SpreadsheetUtilities
         /// The number of ordered pairs in the DependencyGraph.
         /// </summary>
         public int Size{
-            get {
-                return 0;
+            get { 
+                return pairSize; 
             }
         }
 
@@ -127,7 +134,11 @@ namespace SpreadsheetUtilities
         /// <param name="s"> s must be evaluated first. T depends on S</param>
         /// <param name="t"> t cannot be evaluated until s is</param>        /// 
         public void AddDependency(string s, string t){
+            if (dependents.Contains(s))
+            {
+                dependents.Add(s);
 
+            }
         }
 
 
