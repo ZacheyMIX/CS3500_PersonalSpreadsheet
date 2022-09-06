@@ -5,7 +5,11 @@ VisualStudioVersion = 17.3.32819.101
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FormulaEvaluator", "FormulaEvaluator\FormulaEvaluator.csproj", "{5762ED28-7917-4267-A2CA-151A635D22EC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reference", "Reference\Reference.csproj", "{53921742-8288-432B-B2BB-E8D43189B4C1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Reference", "Reference\Reference.csproj", "{53921742-8288-432B-B2BB-E8D43189B4C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyGraph", "DependencyGraph\DependencyGraph.csproj", "{202F6FC7-8B04-4071-9806-5647B22DC9A7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DependencyGraphTests", "DependencyGraphTests\DependencyGraphTests.csproj", "{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +25,14 @@ Global
 		{53921742-8288-432B-B2BB-E8D43189B4C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{53921742-8288-432B-B2BB-E8D43189B4C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{53921742-8288-432B-B2BB-E8D43189B4C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{202F6FC7-8B04-4071-9806-5647B22DC9A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{202F6FC7-8B04-4071-9806-5647B22DC9A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{202F6FC7-8B04-4071-9806-5647B22DC9A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{202F6FC7-8B04-4071-9806-5647B22DC9A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
