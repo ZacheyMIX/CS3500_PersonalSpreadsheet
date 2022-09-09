@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SpreadsheetUtilities
@@ -48,20 +49,30 @@ namespace SpreadsheetUtilities
      */
     public class DependencyGraph
     {
-        private int pairSize;
-        private ArrayList dependencies;
-        private ArrayList dependents;
-        private ArrayList pairs;
+        private int pairCount;
+        private Dictionary<String, ArrayList> dependencies;
+        private Dictionary<String, ArrayList> dependents;
 
         /// <summary>
         /// Creates an empty DependencyGraph.
         /// </summary>
         public DependencyGraph(){
-            dependencies = new ArrayList();
-            dependents = new ArrayList();
-            pairs = new ArrayList();
-            pairSize = 0;
+            dependencies = new Dictionary<string, ArrayList>();
+            dependents = new Dictionary<string, ArrayList>();
+            pairCount = 0;
         }
+
+        //This method grabs the correct number for the string array that is trying to be found
+        private int grabKey(string key, string[] list) {
+            for(int i = 0; i < list.Length; i++){
+                if (list[i].Equals(key))
+                {
+                    return i;
+                }
+            }
+            throw new ArgumentException("Key does not exist");
+        }
+
 
 
         /// <summary>
@@ -69,7 +80,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public int Size{
             get { 
-                return pairSize; 
+                return pairCount; 
             }
         }
 
@@ -82,8 +93,9 @@ namespace SpreadsheetUtilities
         /// It should return the size of dependees("a")
         /// </summary>
         public int this[string s]{
-            get { 
-                return 0; 
+            get
+            {
+                return dependents[s].Count; 
             }
         }
 
@@ -111,15 +123,16 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
-            return null;
+            IEnumerable<string> keyList = new List<string>(this.dependents.Keys);
+            return keyList;
         }
 
         /// <summary>
         /// Enumerates dependees(s).
         /// </summary>
-        public IEnumerable<string> GetDependees(string s)
-        {
-            return null;
+        public IEnumerable<string> GetDependees(string s){
+            IEnumerable<string> keyList = new List<string>(this.dependencies.Keys);
+            return keyList;
         }
 
 
@@ -134,10 +147,43 @@ namespace SpreadsheetUtilities
         /// <param name="s"> s must be evaluated first. T depends on S</param>
         /// <param name="t"> t cannot be evaluated until s is</param>        /// 
         public void AddDependency(string s, string t){
-            if (dependents.Contains(s))
+            if (dependents.ContainsKey(s))
             {
-                dependents.Add(s);
+                if (dependencies.ContainsKey(t))
+                {
+                    throw new ArgumentException("Ordered Pair Already Exists");
+                }
+                else
+                {
+                    dependents[s].Add(t);
+                    if (dependencies.ContainsKey(t))
+                    {
+                        dependencies[t].Add(s);
+                    }
+                    else
+                    {
+                        dependencies.Add(t, new ArrayList());
+                        dependencies[t].Add(s);
+                    }
+                }
+                pairCount++;
 
+            }
+            else
+            {
+                dependents.Add(s, new ArrayList());
+                dependents[s].Add(t);
+                if (dependencies.ContainsKey(t))
+                {
+                    dependencies[t].Add(s);
+                }
+                else
+                {
+                   dependencies.Add(t, new ArrayList());
+                   dependencies[t].Add(s);
+                }
+                pairCount++;
+                
             }
         }
 

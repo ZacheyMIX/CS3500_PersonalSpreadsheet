@@ -29,8 +29,6 @@ namespace FormulaEvaluator
             bool isNumeric;
             //The value at the current token through the search
             int currentValue;
-            //Results of operations done
-            int val;
             //The stack that contains values
             Stack<int> valStack = new Stack<int>();
             //The stack that contains operations
@@ -90,11 +88,22 @@ namespace FormulaEvaluator
                 else if (substring is ")")
                 {
                     //Pushes result from last operation and last to values from the stack
-                    StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
                     if (!(opStack.Peek() is "("))
-                        throw new ArgumentException("expected a ( in the stack, but was not there");
-                    //Gets rid of ( from the stack
-                    opStack.Pop();
+                    {
+                        StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
+                        if (opStack.Count is 0 || !(opStack.Peek() is "("))
+                            throw new ArgumentException("expected a ( in the stack, but was not there");
+                        //Gets rid of ( from the stack
+                        opStack.Pop();
+                        //If there is a * or / before the (, operate that function
+                        if(!(opStack.Count is 0) && (opStack.Peek() is "*" || opStack.Peek() is "/")){
+                            StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
+                        }
+                    }
+                    //If ( is the next operator, than there is no need for it, remove
+                    else
+                        opStack.Pop();
+                    
                 }
                 //This else statement is for any other case such as variables
                 else
@@ -117,8 +126,8 @@ namespace FormulaEvaluator
                         valStack.Push(currentValue);
                 }
             }
-            //If there is an operation in opStack, runs 1 more calculation
-            if (opStack.Count > 0)
+            //If there is an operation in opStack, runs more calculations
+            if(opStack.Count > 0)
             {
                 //Checks if the valStack has more than 1 value
                 //Otherwise throws argument exception
@@ -128,8 +137,8 @@ namespace FormulaEvaluator
                 StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
             }
             //If there is still more than 1 value, throw argument exception
-            if (valStack.Count > 1)
-                throw new ArgumentException("val stack still has more than 1 value in the stack");
+            if (!(valStack.Count is 1))
+                throw new ArgumentException("val stack does not have exactly one value in it");
             //Returns the final value stored in the stack
             return valStack.Pop();
         }
@@ -154,12 +163,12 @@ namespace FormulaEvaluator
         {
             //The final value from the calculations
             int finalVal;
-            if(c is "*")
+            if(c is "*" && stack.Count > 0)
             {
                 finalVal = stack.Pop() * val;
                 stack.Push(finalVal);
             }
-            else if(c is "/")
+            else if(c is "/" && stack.Count > 0)
             {
                 //Checks if the value is 0, if it is throws an argument exception
                 if (val is 0)
@@ -167,12 +176,12 @@ namespace FormulaEvaluator
                 finalVal = stack.Pop() / val;
                 stack.Push(finalVal);
             }
-            else if(c is "+")
+            else if(c is "+" && stack.Count > 0)
             {
                 finalVal = stack.Pop() + val;
                 stack.Push(finalVal);
             }
-            else if(c is "-")
+            else if(c is "-" && stack.Count > 0)
             {
                 finalVal = stack.Pop() - val;
                 stack.Push(finalVal);
