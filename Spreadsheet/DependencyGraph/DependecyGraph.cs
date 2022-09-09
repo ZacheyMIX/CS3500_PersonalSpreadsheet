@@ -50,15 +50,15 @@ namespace SpreadsheetUtilities
     public class DependencyGraph
     {
         private int pairCount;
-        private Dictionary<String, ArrayList> dependees;
-        private Dictionary<String, ArrayList> dependents;
+        private Dictionary<String, List<String>> dependees;
+        private Dictionary<String, List<String>> dependents;
 
         /// <summary>
         /// Creates an empty DependencyGraph.
         /// </summary>
         public DependencyGraph(){
-            dependees = new Dictionary<string, ArrayList>();
-            dependents = new Dictionary<string, ArrayList>();
+            dependees = new Dictionary<string, List<String>>();
+            dependents = new Dictionary<string, List<String>>();
             pairCount = 0;
         }
 
@@ -168,7 +168,7 @@ namespace SpreadsheetUtilities
                 {
                     //Otherwise adds t to the list at key s and adds t to dependees and s to the list at key t
                     dependents[s].Add(t); 
-                    dependees.Add(t, new ArrayList());
+                    dependees.Add(t, new List<String>());
                     dependees[t].Add(s);
                     
                 }
@@ -179,7 +179,7 @@ namespace SpreadsheetUtilities
             else
             {
                 //If S is not in dependents, adds s to key, and t a new list at key s
-                dependents.Add(s, new ArrayList());
+                dependents.Add(s, new List<String>());
                 dependents[s].Add(t);
                 //Checks if t exists in dependees
                 if (dependees.ContainsKey(t))
@@ -190,7 +190,7 @@ namespace SpreadsheetUtilities
                 else
                 {
                     //If t is not in dependees, adds t to key, and s to a new list at key t
-                   dependees.Add(t, new ArrayList());
+                   dependees.Add(t, new List<String>());
                    dependees[t].Add(s);
                 }
                 //Increase pair count
@@ -206,21 +206,18 @@ namespace SpreadsheetUtilities
         /// <param name="s"></param>
         /// <param name="t"></param>
         public void RemoveDependency(string s, string t){
-            if (dependents.ContainsKey(s))
+            //Checks if pair is contained within dependents and dependees
+            if (dependents.ContainsKey(s) && dependees.ContainsKey(t))
             {
-                if (dependees.ContainsKey(t))
-                {
+                    //If so, removes t from key s in dependents, and removes s from key t in dependees
                     dependents[s].Remove(t);
-                    pairCount--;
-                }
-                else
-                {
-                    throw new ArgumentException("Pair does not exist");
-                }
-                
+                    dependees[t].Remove(s);
+                    //Reduces pairCount
+                    pairCount--;   
             }
             else
             {
+                //If pair does not exist, throw exception
                 throw new ArgumentException("Pair does not exist");
             }
             
@@ -232,6 +229,15 @@ namespace SpreadsheetUtilities
         /// t in newDependents, adds the ordered pair (s,t).
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents){
+            if (dependees.ContainsKey(s))
+            {
+                dependees[s].Clear();
+                for (int i = 0; i < newDependents.Count(); i++)
+                {
+                    dependees[s].Add(newDependents.ElementAt(i));
+                }
+            }
+            
         }
 
 
@@ -240,7 +246,11 @@ namespace SpreadsheetUtilities
         /// t in newDependees, adds the ordered pair (t,s).
         /// </summary>
         public void ReplaceDependees(string s, IEnumerable<string> newDependees){
-
+            dependents[s].Clear();
+            for (int i = 0; i < newDependees.Count(); i++)
+            {
+                dependents[s].Add(newDependees.ElementAt(i));
+            }
         }
 
     }
