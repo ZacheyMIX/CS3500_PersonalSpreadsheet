@@ -65,17 +65,6 @@ namespace SpreadsheetUtilities
             pairCount = 0;
         }
 
-        //This method grabs the correct number for the string array that is trying to be found
-        private int grabKey(string key, string[] list) {
-            for(int i = 0; i < list.Length; i++){
-                if (list[i].Equals(key))
-                {
-                    return i;
-                }
-            }
-            throw new ArgumentException("Key does not exist");
-        }
-
 
 
         /// <summary>
@@ -121,7 +110,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependees(string s)
         {
-            if (dependents[s].Count is 0)
+            if (this[s] is 0)
             {
                 return false;
             }
@@ -135,6 +124,7 @@ namespace SpreadsheetUtilities
         public IEnumerable<string> GetDependents(string s)
         {
             IEnumerable<string> keyList = new List<string>();
+            //Checks if s is in dependents, and checks if s has dependees
             if (dependents.ContainsKey(s) && HasDependees(s))
             {
                 keyList = new List<string>(this.dependents[s]);
@@ -147,6 +137,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependees(string s){
             IEnumerable<string> keyList = new List<string>();
+            //Checks if s is in dependees and checks if s has dependents
             if (dependees.ContainsKey(s) && HasDependents(s))
             {
                 keyList = new List<string>(this.dependees[s]);
