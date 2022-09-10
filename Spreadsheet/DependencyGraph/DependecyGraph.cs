@@ -49,7 +49,7 @@ namespace SpreadsheetUtilities
      */
     public class DependencyGraph
     {
-        //The number of pairs contained within the dependency graph
+        //The number of pairs within the Dependency Graph
         private int pairCount;
         //A dictionary of values that are depending on values
         private Dictionary<String, List<String>> dependees;
@@ -63,6 +63,17 @@ namespace SpreadsheetUtilities
             dependees = new Dictionary<string, List<String>>();
             dependents = new Dictionary<string, List<String>>();
             pairCount = 0;
+        }
+
+        //This method grabs the correct number for the string array that is trying to be found
+        private int grabKey(string key, string[] list) {
+            for(int i = 0; i < list.Length; i++){
+                if (list[i].Equals(key))
+                {
+                    return i;
+                }
+            }
+            throw new ArgumentException("Key does not exist");
         }
 
 
@@ -97,7 +108,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependents(string s)
         {
-            if (dependents.Count is 0)
+            if (dependees[s].Count is 0)
             {
                 return false;
             }
@@ -110,7 +121,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public bool HasDependees(string s)
         {
-            if(dependees.Count is 0)
+            if (dependents[s].Count is 0)
             {
                 return false;
             }
@@ -124,7 +135,7 @@ namespace SpreadsheetUtilities
         public IEnumerable<string> GetDependents(string s)
         {
             IEnumerable<string> keyList = new List<string>();
-            if (dependents.ContainsKey(s))
+            if (dependents.ContainsKey(s) && HasDependees(s))
             {
                 keyList = new List<string>(this.dependents[s]);
             }
@@ -136,7 +147,7 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependees(string s){
             IEnumerable<string> keyList = new List<string>();
-            if (dependees.ContainsKey(s))
+            if (dependees.ContainsKey(s) && HasDependents(s))
             {
                 keyList = new List<string>(this.dependees[s]);
             }
