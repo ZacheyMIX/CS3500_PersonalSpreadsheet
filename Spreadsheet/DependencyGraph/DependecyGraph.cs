@@ -49,8 +49,11 @@ namespace SpreadsheetUtilities
      */
     public class DependencyGraph
     {
+        //The number of pairs contained within the dependency graph
         private int pairCount;
+        //A dictionary of values that are depending on values
         private Dictionary<String, List<String>> dependees;
+        //A dictionary of values that are being depended on and its dependees
         private Dictionary<String, List<String>> dependents;
 
         /// <summary>
@@ -60,17 +63,6 @@ namespace SpreadsheetUtilities
             dependees = new Dictionary<string, List<String>>();
             dependents = new Dictionary<string, List<String>>();
             pairCount = 0;
-        }
-
-        //This method grabs the correct number for the string array that is trying to be found
-        private int grabKey(string key, string[] list) {
-            for(int i = 0; i < list.Length; i++){
-                if (list[i].Equals(key))
-                {
-                    return i;
-                }
-            }
-            throw new ArgumentException("Key does not exist");
         }
 
 
@@ -131,7 +123,11 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<string> GetDependents(string s)
         {
-            IEnumerable<string> keyList = new List<string>(this.dependents.Keys);
+            IEnumerable<string> keyList = new List<string>();
+            if (dependents.ContainsKey(s))
+            {
+                keyList = new List<string>(this.dependents[s]);
+            }
             return keyList;
         }
 
@@ -139,7 +135,12 @@ namespace SpreadsheetUtilities
         /// Enumerates dependees(s).
         /// </summary>
         public IEnumerable<string> GetDependees(string s){
-            IEnumerable<string> keyList = new List<string>(this.dependees.Keys);
+            IEnumerable<string> keyList = new List<string>();
+            if (dependees.ContainsKey(s))
+            {
+                keyList = new List<string>(this.dependees[s]);
+            }
+            
             return keyList;
         }
 
@@ -159,21 +160,19 @@ namespace SpreadsheetUtilities
             if (dependents.ContainsKey(s))
             {
                 //Then checks if t is dependees
-                if (dependees.ContainsKey(t))
-                {
-                    //If all checks pass, pair already exists
-                    throw new ArgumentException("Ordered Pair Already Exists");
-                }
-                else
+                if (!(dependents[s].Contains(t)))
                 {
                     //Otherwise adds t to the list at key s and adds t to dependees and s to the list at key t
-                    dependents[s].Add(t); 
-                    dependees.Add(t, new List<String>());
+                    dependents[s].Add(t);
+                    //If t does not exist in dependees, adds it to the list
+                    if (!(dependees.ContainsKey(t)))
+                    {
+                        dependees.Add(t, new List<String>());      
+                    }
+                    //Adds s to dependees at t and increases paircount
                     dependees[t].Add(s);
-                    
+                    pairCount++;
                 }
-                //Increase pairCount
-                pairCount++;
 
             }
             else
@@ -182,7 +181,7 @@ namespace SpreadsheetUtilities
                 dependents.Add(s, new List<String>());
                 dependents[s].Add(t);
                 //Checks if t exists in dependees
-                if (dependees.ContainsKey(t))
+                if (dependees.ContainsKey(t) && !(dependees[t].Contains(s)))
                 {
                     //If it does, add s to list at key t
                     dependees[t].Add(s);
@@ -206,14 +205,15 @@ namespace SpreadsheetUtilities
         /// <param name="s"></param>
         /// <param name="t"></param>
         public void RemoveDependency(string s, string t){
+
             //Checks if pair is contained within dependents and dependees
             if (dependents.ContainsKey(s) && dependees.ContainsKey(t))
             {
-                    //If so, removes t from key s in dependents, and removes s from key t in dependees
-                    dependents[s].Remove(t);
-                    dependees[t].Remove(s);
-                    //Reduces pairCount
-                    pairCount--;   
+                //If so, removes t from key s in dependents, and removes s from key t in dependees
+                dependents[s].Remove(t);
+                dependees[t].Remove(s);
+                //Reduces pairCount
+                pairCount--;   
             }
             else
             {
@@ -229,14 +229,20 @@ namespace SpreadsheetUtilities
         /// t in newDependents, adds the ordered pair (s,t).
         /// </summary>
         public void ReplaceDependents(string s, IEnumerable<string> newDependents){
-            if (dependees.ContainsKey(s))
+            //Checks if s is contained in dependents
+            if (dependents.ContainsKey(s))
             {
-                dependees[s].Clear();
+                //Removes dependees from dependents in s, and reduces the pair count accordingly
+                pairCount -= dependents[s].Count;
+                dependents[s].Clear();
+                //Adds new dependents to dependent at s
                 for (int i = 0; i < newDependents.Count(); i++)
                 {
-                    dependees[s].Add(newDependents.ElementAt(i));
+                    AddDependency(s, newDependents.ElementAt(i));
+                    dependents[s].Add(newDependents.ElementAt(i));
                 }
             }
+            
             
         }
 
@@ -246,10 +252,18 @@ namespace SpreadsheetUtilities
         /// t in newDependees, adds the ordered pair (t,s).
         /// </summary>
         public void ReplaceDependees(string s, IEnumerable<string> newDependees){
-            dependents[s].Clear();
-            for (int i = 0; i < newDependees.Count(); i++)
+            //Checks if s is contained within dependees
+            if (dependees.ContainsKey(s))
             {
-                dependents[s].Add(newDependees.ElementAt(i));
+                //Removes the pairs count contained within dependees at s
+                pairCount -= dependees[s].Count;
+                //Clears the dependents at dependees at s
+                dependees[s].Clear();
+                //Adds the new dependees at dependees at s
+                for (int i = 0; i < newDependees.Count(); i++)
+                {
+                    AddDependency(newDependees.ElementAt(i), s);
+                }
             }
         }
 
