@@ -9,17 +9,34 @@ class test
     {
         if (x == "a4")
         {
-            return 21;
-        }
-        else if (x == "a1")
-        {
             return 3;
         }
+        else if (x == "x2")
+        {
+            return 2;
+        }
+        else if (x == "x3")
+        {
+            return 2;
+        }
+        else if (x == "x4")
+        {
+            return 2;
+        }
+        else if (x == "y1")
+        {
+            return 4;
+        }
+        else if (x == "x7")
+        {
+            return 1;
+        }
         else
-            throw new ArgumentException();
+            throw new ArgumentException("Unknown Variable");
     }
     static void Main(String[] args)
     {
-        //Console.WriteLine(Evaluator.Evaluate("9 + (9 + 3 / 2 - 3) * a4", simpleLookUp));
+        //Expecting 6
+        Console.WriteLine(Evaluator.Evaluate("2+3*5+(3+4*8)*5+2", simpleLookUp));
     }
 }
