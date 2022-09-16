@@ -6,6 +6,7 @@
 //  Solutions written by Zach Blomquist
 //  9/6/22
 
+using Microsoft.VisualBasic;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -59,7 +60,8 @@ namespace SpreadsheetUtilities
         /// <summary>
         /// Creates an empty DependencyGraph.
         /// </summary>
-        public DependencyGraph(){
+        public DependencyGraph()
+        {
             dependees = new Dictionary<string, List<String>>();
             dependents = new Dictionary<string, List<String>>();
             pairCount = 0;
@@ -70,9 +72,11 @@ namespace SpreadsheetUtilities
         /// <summary>
         /// The number of ordered pairs in the DependencyGraph.
         /// </summary>
-        public int Size{
-            get { 
-                return pairCount; 
+        public int Size
+        {
+            get
+            {
+                return pairCount;
             }
         }
 
@@ -84,10 +88,11 @@ namespace SpreadsheetUtilities
         /// dg["a"]
         /// It should return the size of dependees("a")
         /// </summary>
-        public int this[string s]{
+        public int this[string s]
+        {
             get
             {
-                return dependents[s].Count; 
+                return dependents[s].Count;
             }
         }
 
@@ -135,14 +140,15 @@ namespace SpreadsheetUtilities
         /// <summary>
         /// Enumerates dependees(s).
         /// </summary>
-        public IEnumerable<string> GetDependees(string s){
+        public IEnumerable<string> GetDependees(string s)
+        {
             IEnumerable<string> keyList = new List<string>();
             //Checks if s is in dependees and checks if s has dependents
             if (dependees.ContainsKey(s) && HasDependents(s))
             {
                 keyList = new List<string>(this.dependees[s]);
             }
-            
+
             return keyList;
         }
 
@@ -157,7 +163,8 @@ namespace SpreadsheetUtilities
         /// </summary>
         /// <param name="s"> s must be evaluated first. T depends on S</param>
         /// <param name="t"> t cannot be evaluated until s is</param>        /// 
-        public void AddDependency(string s, string t){
+        public void AddDependency(string s, string t)
+        {
             //Checks if S is in dependents
             if (dependents.ContainsKey(s))
             {
@@ -169,7 +176,7 @@ namespace SpreadsheetUtilities
                     //If t does not exist in dependees, adds it to the list
                     if (!(dependees.ContainsKey(t)))
                     {
-                        dependees.Add(t, new List<String>());      
+                        dependees.Add(t, new List<String>());
                     }
                     //Adds s to dependees at t and increases paircount
                     dependees[t].Add(s);
@@ -191,12 +198,12 @@ namespace SpreadsheetUtilities
                 else
                 {
                     //If t is not in dependees, adds t to key, and s to a new list at key t
-                   dependees.Add(t, new List<String>());
-                   dependees[t].Add(s);
+                    dependees.Add(t, new List<String>());
+                    dependees[t].Add(s);
                 }
                 //Increase pair count
                 pairCount++;
-                
+
             }
         }
 
@@ -206,7 +213,8 @@ namespace SpreadsheetUtilities
         /// </summary>
         /// <param name="s"></param>
         /// <param name="t"></param>
-        public void RemoveDependency(string s, string t){
+        public void RemoveDependency(string s, string t)
+        {
 
             //Checks if pair is contained within dependents and dependees
             if (dependents.ContainsKey(s) && dependees.ContainsKey(t))
@@ -215,14 +223,14 @@ namespace SpreadsheetUtilities
                 dependents[s].Remove(t);
                 dependees[t].Remove(s);
                 //Reduces pairCount
-                pairCount--;   
+                pairCount--;
             }
             else
             {
                 //If pair does not exist, throw exception
                 throw new ArgumentException("Pair does not exist");
             }
-            
+
         }
 
 
@@ -230,7 +238,8 @@ namespace SpreadsheetUtilities
         /// Removes all existing ordered pairs of the form (s,r).  Then, for each
         /// t in newDependents, adds the ordered pair (s,t).
         /// </summary>
-        public void ReplaceDependents(string s, IEnumerable<string> newDependents){
+        public void ReplaceDependents(string s, IEnumerable<string> newDependents)
+        {
             //Checks if s is contained in dependents
             if (dependents.ContainsKey(s))
             {
@@ -244,8 +253,8 @@ namespace SpreadsheetUtilities
                     dependents[s].Add(newDependents.ElementAt(i));
                 }
             }
-            
-            
+
+
         }
 
 
@@ -253,7 +262,8 @@ namespace SpreadsheetUtilities
         /// Removes all existing ordered pairs of the form (r,s).  Then, for each 
         /// t in newDependees, adds the ordered pair (t,s).
         /// </summary>
-        public void ReplaceDependees(string s, IEnumerable<string> newDependees){
+        public void ReplaceDependees(string s, IEnumerable<string> newDependees)
+        {
             //Checks if s is contained within dependees
             if (dependees.ContainsKey(s))
             {
@@ -270,5 +280,6 @@ namespace SpreadsheetUtilities
         }
 
     }
+
 
 }
