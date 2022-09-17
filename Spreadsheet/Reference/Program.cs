@@ -15,22 +15,6 @@ class test
         {
             return 2;
         }
-        else if (x == "x3")
-        {
-            return 2;
-        }
-        else if (x == "x4")
-        {
-            return 2;
-        }
-        else if (x == "y1")
-        {
-            return 4;
-        }
-        else if (x == "x7")
-        {
-            return 1;
-        }
         else
             throw new ArgumentException("Unknown Variable");
     }

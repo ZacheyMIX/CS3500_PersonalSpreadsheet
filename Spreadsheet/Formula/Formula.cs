@@ -6,6 +6,7 @@
 // Last updated: 9/8, updated for non-nullable types
 using SpreadsheetUtilities;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Linq;
@@ -36,16 +37,17 @@ namespace SpreadsheetUtilities
     {
         String formula;
         //tokens for the formula
-        IEnumerable<string> formulaTokens;
+        IEnumerator<string> tokenEnum;
+        //Normalizer
+        Func<string, string> normalize;
+        //IsValid check
+        Func<string, bool> isValid;
+        //A string that holds the current normalized token
+        List<String> formulaTokens;
+        //A hashcode for the formula
+        int hashCode;
         //A double used to perform a tryParse
         double n;
-        //The value at the current token through the search
-        double currentValue;
-        //The stack that contains values
-        Stack<double> valStack = new Stack<double>();
-        //The stack that contains operations
-        Stack<string> opStack = new Stack<string>();
-        //Checks each token in the substring and evaluates the final result
 
         /// <summary>
         /// Creates a Formula from a string that consists of an infix expression written as
@@ -85,58 +87,113 @@ namespace SpreadsheetUtilities
 
         public Formula(String formula, Func<string, string> normalize, Func<string, bool> isValid)
         {
-            if (isValid(normalize(formula)) is false)
-            {
-                throw new FormulaFormatException("This did not work");
-            }
-            this.formula = normalize(formula);
-            formulaTokens = GetTokens(this.formula);
+            this.formula = formula;
+            this.normalize = normalize;
+            this.isValid = isValid;
+            hashCode = 0;
+            formulaTokens = new List<String>();
+            tokenEnum = GetTokens(formula).GetEnumerator();
+            SyntaxCheck(tokenEnum);
         }
-
         /// <summary>
-        /// Takes in a formula and converts it to its token form.  Removes any whitespace, empty tokens,
-        /// and reajusts numbers to fit a more readable form for the equals methods 
-        /// i.e. 2.000 will change to 2.0 but 2.0001 will not change
+        /// This method finds any syntax errors that could be run into at the objects creation
+        /// If every token passes all the test, there should be no syntax errors in the formula
+        /// and the evaluator can be properly ran
         /// </summary>
-        /// <param name="exp"></param>
-        /// <returns></returns>
-        private string[] formulaRemake(string exp)
+        /// <param name="tokens"></param>
+        /// <exception cref="FormulaFormatException"></exception>
+        private void SyntaxCheck(IEnumerator<string> tokens)
         {
-            //Creates tokens from the formula given
-            string[] substrings = Regex.Split(exp, "(\\()|(\\))|(-)|(\\+)|(\\*)|(/)");
-            //Removes whitespace inside of each token
-            for (int i = 0; i < substrings.Length; i++)
+            //closing bracket counter
+            int closeBrackets = 0;
+            //opening bracket counter
+            int openingBrackets = 0;
+            //a check bool for when a opening bracket or variable is made
+            bool followVariableCheck = false;
+            //A check book for when a closing bracket, variable, or number is made
+            bool followOperatorCheck = false;
+            while (tokens.MoveNext())
             {
-                substrings[i] = String.Concat(substrings[i].Where(c => !char.IsWhiteSpace(c)));
-
+                formulaTokens.Add(normalize(tokens.Current));
             }
-            //Afterwards, deletes any empty tokens from substrings
-            substrings = substrings.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-            for (int i = 0; i < substrings.Length; i++)
+            //throws an exception if there are no tokens in the formula
+            if (formulaTokens.Count is 0)
             {
-                if (isNumeric(substrings[i]))
+                throw new FormulaFormatException("There is no formula put in");
+            }
+            //throws an exception if the formula doens't start with a number, variable, or an opening paranthesis
+            if (!(Regex.IsMatch(formulaTokens[0], @"^[a-zA-Z0-9_(]")))
+                throw new FormulaFormatException("Formula does not start with a number, variable, or an opening paranthesis");
+            //Runs a do while loop on all of the tokens
+            foreach(string currentToken in formulaTokens)
+            {
+                if (!(Regex.IsMatch(currentToken, @"[a-zA-Z0-9_()+/*-]")))
                 {
-                    substrings[i] = " " + Double.Parse(substrings[i]);
+                    throw new FormulaFormatException("An invalid token is contained within the formula");
                 }
-
+                //When a opening bracket or operator is used, throws an exception if it is not
+                //Followed by a variable, opening bracket, or a number
+                if (followVariableCheck is true)
+                {
+                    if (!(Regex.IsMatch(currentToken, @"^[a-zA-Z0-9_(]")))
+                        throw new FormulaFormatException("Opening bracket or operator is not followed by a number, variable, or opening paranthesis");
+                    followVariableCheck = false;
+                }
+                //When a closing bracket, variable, or number is used, throws an exception if it is not
+                //Followed by an operator or a closing bracket
+                else if (followOperatorCheck is true)
+                {
+                    if (!(Regex.IsMatch(currentToken, @"^[*/+)-]")))
+                        throw new FormulaFormatException("number, variable, or closing paranthesis is not followe by an operator or closing paranthesis");
+                    followVariableCheck = false;
+                }
+                //When a opening bracket is used, marks the variable check for the next loop and bumps the opening bracket counter
+                if (currentToken is "(")
+                {
+                    hashCode += String.GetHashCode(currentToken);
+                    followVariableCheck = true;
+                    openingBrackets++;
+                }
+                //When a closing bracket is used, marks the operator check for the next loop and bumps the closing bracket counter
+                else if (currentToken is ")")
+                {
+                    hashCode += String.GetHashCode(currentToken);
+                    followOperatorCheck = true;
+                    closeBrackets++;
+                    if (openingBrackets < closeBrackets)
+                    {
+                        throw new FormulaFormatException("Closing brackets exceed opening brackets");
+                    }
+                }
+                //If an operator is used marks the variable check for the next loop
+                else if (Regex.IsMatch(currentToken, @"^[*/+-]"))
+                {
+                    hashCode += String.GetHashCode(currentToken);
+                    followVariableCheck = true;
+                }
+                //If a variable is used, checks if the varaible is valid and marks the operator check for the next loop
+                else if (Regex.IsMatch(currentToken, @"^[a-zA-Z_]"))
+                {
+                    if (!(isValid(currentToken)))
+                        throw new FormulaFormatException("Token is not a valid variable");
+                    hashCode += String.GetHashCode(currentToken);
+                    followOperatorCheck = true;
+                }
+                //If a number is used, checks if the number is valid and marks the operator check for the next loop
+                else if (Regex.IsMatch(currentToken, @"^[0-9]"))
+                {
+                    hashCode += String.GetHashCode(Double.Parse(currentToken).ToString());
+                    followOperatorCheck = true;
+                }
+             //Move token every loop until it cant
             }
-            return substrings;
+            //Thows an exception if the final token is not a number, variable, or closing paranthesis
+            if (!(Regex.IsMatch(formulaTokens[formulaTokens.Count - 1], @"^[a-zA-Z0-9_)]")))
+                throw new FormulaFormatException("Formula does not end with a number, variable, or closing paranthesis");
+            //If the counter for closing brackets and opening brackets does not equal each other, throw an exception
+            if (closeBrackets != openingBrackets)
+                throw new FormulaFormatException("Closing brackets does not equal to the ammount of opening brackets");
         }
-        /// <summary>
-        /// This method will take in a character and check to see if the character is of numeric value
-        /// </summary>
-        /// <returns></returns>
-        private bool isNumeric(string token)
-        {
-            double n;
-            if (double.TryParse(token, out n))
-            {
-                return true;
-            }
-            return false;
-        }
-
-
 
         /// <summary>
         /// Evaluates this Formula, using the lookup delegate to determine the values of
@@ -161,6 +218,13 @@ namespace SpreadsheetUtilities
         /// </summary>
         public object Evaluate(Func<string, double> lookup)
         {
+            //The value at the current token through the search
+            double currentValue;
+            //The stack that contains values
+            Stack<double> valStack = new Stack<double>();
+            //The stack that contains operations
+            Stack<string> opStack = new Stack<string>();
+
             foreach (string substring in formulaTokens)
             {
                 bool numberCheck;
@@ -210,8 +274,6 @@ namespace SpreadsheetUtilities
                     if (!(opStack.Peek() is "("))
                     {
                         StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
-                        if (opStack.Count is 0 || !(opStack.Peek() is "("))
-                            throw new FormulaFormatException("expected a ( in the stack, but was not there");
                         //Gets rid of ( from the stack
                         opStack.Pop();
                         //If there is a * or / before the (, operate that function
@@ -245,187 +307,195 @@ namespace SpreadsheetUtilities
             //If there is an operation in opStack, runs more calculations
             if (opStack.Count > 0)
             {
-                //Checks if the valStack has more than 1 value
-                //Otherwise throws argument exception
-                if (valStack.Count < 1)
-                    throw new FormulaFormatException("val stack has less than 2 values");
                 //Calculates and pushes the result of the last 2 values with the last operation
                 StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
             }
-            //If there is still more than 1 value, throw argument exception
-            if (!(valStack.Count is 1))
-                throw new FormulaFormatException("val stack does not have exactly one value in it");
             //Returns the final value stored in the stack
             return valStack.Pop();
         }
 
-    /// <summary>
-    /// Enumerates the normalized versions of all of the variables that occur in this 
-    /// formula.  No normalization may appear more than once in the enumeration, even 
-    /// if it appears more than once in this Formula.
-    /// 
-    /// For example, if N is a method that converts all the letters in a string to upper case:
-    /// 
-    /// new Formula("x+y*z", N, s => true).GetVariables() should enumerate "X", "Y", and "Z"
-    /// new Formula("x+X*z", N, s => true).GetVariables() should enumerate "X" and "Z".
-    /// new Formula("x+X*z").GetVariables() should enumerate "x", "X", and "z".
-    /// </summary>
-    public IEnumerable<String> GetVariables()
-    {
-        IEnumerable<string> variables = new List<string>();
-
-        return null;
-    }
-
-    /// <summary>
-    /// Returns a string containing no spaces which, if passed to the Formula
-    /// constructor, will produce a Formula f such that this.Equals(f).  All of the
-    /// variables in the string should be normalized.
-    /// 
-    /// For example, if N is a method that converts all the letters in a string to upper case:
-    /// 
-    /// new Formula("x + y", N, s => true).ToString() should return "X+Y"
-    /// new Formula("x + Y").ToString() should return "x+Y"
-    /// </summary>
-    public override string ToString()
-    {
-        String formulaBuild = "";
-        foreach (String substring in formulaTokens)
+        /// <summary>
+        /// Enumerates the normalized versions of all of the variables that occur in this 
+        /// formula.  No normalization may appear more than once in the enumeration, even 
+        /// if it appears more than once in this Formula.
+        /// 
+        /// For example, if N is a method that converts all the letters in a string to upper case:
+        /// 
+        /// new Formula("x+y*z", N, s => true).GetVariables() should enumerate "X", "Y", and "Z"
+        /// new Formula("x+X*z", N, s => true).GetVariables() should enumerate "X" and "Z".
+        /// new Formula("x+X*z").GetVariables() should enumerate "x", "X", and "z".
+        /// </summary>
+        public IEnumerable<String> GetVariables()
         {
-            formulaBuild += substring;
-        }
-        return formulaBuild;
-    }
-
-    /// <summary>
-    /// If obj is null or obj is not a Formula, returns false.  Otherwise, reports
-    /// whether or not this Formula and obj are equal.
-    /// 
-    /// Two Formulae are considered equal if they consist of the same tokens in the
-    /// same order.  To determine token equality, all tokens are compared as strings 
-    /// except for numeric tokens and variable tokens.
-    /// Numeric tokens are considered equal if they are equal after being "normalized" 
-    /// by C#'s standard conversion from string to double, then back to string. This 
-    /// eliminates any inconsistencies due to limited floating point precision.
-    /// Variable tokens are considered equal if their normalized forms are equal, as 
-    /// defined by the provided normalizer.
-    /// 
-    /// For example, if N is a method that converts all the letters in a string to upper case:
-    ///  
-    /// new Formula("x1+y2", N, s => true).Equals(new Formula("X1  +  Y2")) is true
-    /// new Formula("x1+y2").Equals(new Formula("X1+Y2")) is false
-    /// new Formula("x1+y2").Equals(new Formula("y2+x1")) is false
-    /// new Formula("2.0 + x7").Equals(new Formula("2.000 + x7")) is true
-    /// </summary>
-    public override bool Equals(object? obj)
-    {
-        if (obj is null || !(obj is Formula))
-            return false;
-        else
-            return true;
-
-    }
-
-    /// <summary>
-    /// Reports whether f1 == f2, using the notion of equality from the Equals method.
-    /// Note that f1 and f2 cannot be null, because their types are non-nullable
-    /// </summary>
-    public static bool operator ==(Formula f1, Formula f2)
-    {
-        if (f1.Equals(f2))
-            return true;
-        return false;
-    }
-
-    /// <summary>
-    /// Reports whether f1 != f2, using the notion of equality from the Equals method.
-    /// Note that f1 and f2 cannot be null, because their types are non-nullable
-    /// </summary>
-    public static bool operator !=(Formula f1, Formula f2)
-    {
-        if (f1.Equals(f2))
-            return false;
-        return true;
-    }
-
-    /// <summary>
-    /// Returns a hash code for this Formula.  If f1.Equals(f2), then it must be the
-    /// case that f1.GetHashCode() == f2.GetHashCode().  Ideally, the probability that two 
-    /// randomly-generated unequal Formulae have the same hash code should be extremely small.
-    /// </summary>
-    public override int GetHashCode()
-    {
-        return 0;
-    }
-
-    /// <summary>
-    /// Given an expression, enumerates the tokens that compose it.  Tokens are left paren;
-    /// right paren; one of the four operator symbols; a string consisting of a letter or underscore
-    /// followed by zero or more letters, digits, or underscores; a double literal; and anything that doesn't
-    /// match one of those patterns.  There are no empty tokens, and no token contains white space.
-    /// </summary>
-    private static IEnumerable<string> GetTokens(String formula)
-    {
-        // Patterns for individual tokens
-        String lpPattern = @"\(";
-        String rpPattern = @"\)";
-        String opPattern = @"[\+\-*/]";
-        String varPattern = @"[a-zA-Z_](?: [a-zA-Z_]|\d)*";
-        String doublePattern = @"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: [eE][\+-]?\d+)?";
-        String spacePattern = @"\s+";
-
-        // Overall pattern
-        String pattern = String.Format("({0}) | ({1}) | ({2}) | ({3}) | ({4}) | ({5})",
-                                        lpPattern, rpPattern, opPattern, varPattern, doublePattern, spacePattern);
-
-        // Enumerate matching tokens that don't consist solely of white space.
-        foreach (String s in Regex.Split(formula, pattern, RegexOptions.IgnorePatternWhitespace))
-        {
-            if (!Regex.IsMatch(s, @"^\s*$", RegexOptions.Singleline))
+            IEnumerable<String> result = new List<String>();
+            foreach(String currentToken in formulaTokens)
             {
-                yield return s;
+                if(Regex.IsMatch(currentToken, @"^[a-zA-Z_]"))
+                    yield return currentToken;
             }
         }
 
+        /// <summary>
+        /// Returns a string containing no spaces which, if passed to the Formula
+        /// constructor, will produce a Formula f such that this.Equals(f).  All of the
+        /// variables in the string should be normalized.
+        /// 
+        /// For example, if N is a method that converts all the letters in a string to upper case:
+        /// 
+        /// new Formula("x + y", N, s => true).ToString() should return "X+Y"
+        /// new Formula("x + Y").ToString() should return "x+Y"
+        /// </summary>
+        public override string ToString()
+        {
+            String formulaBuild = "";
+            foreach (string currentToken in formulaTokens)
+            {
+                formulaBuild += currentToken;
+            }
+            return formulaBuild;
+        }
+
+        /// <summary>
+        /// If obj is null or obj is not a Formula, returns false.  Otherwise, reports
+        /// whether or not this Formula and obj are equal.
+        /// 
+        /// Two Formulae are considered equal if they consist of the same tokens in the
+        /// same order.  To determine token equality, all tokens are compared as strings 
+        /// except for numeric tokens and variable tokens.
+        /// Numeric tokens are considered equal if they are equal after being "normalized" 
+        /// by C#'s standard conversion from string to double, then back to string. This 
+        /// eliminates any inconsistencies due to limited floating point precision.
+        /// Variable tokens are considered equal if their normalized forms are equal, as 
+        /// defined by the provided normalizer.
+        /// 
+        /// For example, if N is a method that converts all the letters in a string to upper case:
+        ///  
+        /// new Formula("x1+y2", N, s => true).Equals(new Formula("X1  +  Y2")) is true
+        /// new Formula("x1+y2").Equals(new Formula("X1+Y2")) is false
+        /// new Formula("x1+y2").Equals(new Formula("y2+x1")) is false
+        /// new Formula("2.0 + x7").Equals(new Formula("2.000 + x7")) is true
+        /// </summary>
+        public override bool Equals(object? obj)
+        {
+            if (obj is null || !(obj is Formula))
+                return false;
+            Formula compare = (Formula)obj;
+            for(int i = 0; i < formulaTokens.Count; i++)
+            {
+                if (Double.TryParse(formulaTokens[i], out n) && Double.TryParse(formulaTokens[i], out n))
+                {
+                    if (Double.Parse(formulaTokens[i]) != Double.Parse(compare.formulaTokens[i]))
+                        return false;
+                }
+                else if(formulaTokens[i] != compare.formulaTokens[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+
+        }
+
+        /// <summary>
+        /// Reports whether f1 == f2, using the notion of equality from the Equals method.
+        /// Note that f1 and f2 cannot be null, because their types are non-nullable
+        /// </summary>
+        public static bool operator ==(Formula f1, Formula f2)
+        {
+            if (f1.Equals(f2))
+                return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Reports whether f1 != f2, using the notion of equality from the Equals method.
+        /// Note that f1 and f2 cannot be null, because their types are non-nullable
+        /// </summary>
+        public static bool operator !=(Formula f1, Formula f2)
+        {
+            if (f1.Equals(f2))
+                return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Returns a hash code for this Formula.  If f1.Equals(f2), then it must be the
+        /// case that f1.GetHashCode() == f2.GetHashCode().  Ideally, the probability that two 
+        /// randomly-generated unequal Formulae have the same hash code should be extremely small.
+        /// </summary>
+        public override int GetHashCode()
+        {
+            return hashCode;
+        }
+
+        /// <summary>
+        /// Given an expression, enumerates the tokens that compose it.  Tokens are left paren;
+        /// right paren; one of the four operator symbols; a string consisting of a letter or underscore
+        /// followed by zero or more letters, digits, or underscores; a double literal; and anything that doesn't
+        /// match one of those patterns.  There are no empty tokens, and no token contains white space.
+        /// </summary>
+        private static IEnumerable<string> GetTokens(String formula)
+        {
+            // Patterns for individual tokens
+            String lpPattern = @"\(";
+            String rpPattern = @"\)";
+            String opPattern = @"[\+\-*/]";
+            String varPattern = @"[a-zA-Z_](?: [a-zA-Z_]|\d)*";
+            String doublePattern = @"(?: \d+\.\d* | \d*\.\d+ | \d+ ) (?: [eE][\+-]?\d+)?";
+            String spacePattern = @"\s+";
+
+            // Overall pattern
+            String pattern = String.Format("({0}) | ({1}) | ({2}) | ({3}) | ({4}) | ({5})",
+                                            lpPattern, rpPattern, opPattern, varPattern, doublePattern, spacePattern);
+
+            // Enumerate matching tokens that don't consist solely of white space.
+            foreach (String s in Regex.Split(formula, pattern, RegexOptions.IgnorePatternWhitespace))
+            {
+                if (!Regex.IsMatch(s, @"^\s*$", RegexOptions.Singleline))
+                {
+                    yield return s;
+                }
+            }
+
+        }
+
+
     }
 
-
-}
-
-/// <summary>
-/// Used to report syntactic errors in the argument to the Formula constructor.
-/// </summary>
-public class FormulaFormatException : Exception
-{
     /// <summary>
-    /// Constructs a FormulaFormatException containing the explanatory message.
+    /// Used to report syntactic errors in the argument to the Formula constructor.
     /// </summary>
-    public FormulaFormatException(String message)
-        : base(message)
+    public class FormulaFormatException : Exception
     {
+        /// <summary>
+        /// Constructs a FormulaFormatException containing the explanatory message.
+        /// </summary>
+        public FormulaFormatException(String message)
+            : base(message)
+        {
+        }
     }
-}
 
-/// <summary>
-/// Used as a possible return value of the Formula.Evaluate method.
-/// </summary>
-public struct FormulaError
-{
     /// <summary>
-    /// Constructs a FormulaError containing the explanatory reason.
+    /// Used as a possible return value of the Formula.Evaluate method.
     /// </summary>
-    /// <param name="reason"></param>
-    public FormulaError(String reason)
-        : this()
+    public struct FormulaError
     {
-        Reason = reason;
-    }
+        /// <summary>
+        /// Constructs a FormulaError containing the explanatory reason.
+        /// </summary>
+        /// <param name="reason"></param>
+        public FormulaError(String reason)
+            : this()
+        {
+            Reason = reason;
+        }
 
-    /// <summary>
-    ///  The reason why this FormulaError was created.
-    /// </summary>
-    public string Reason { get; private set; }
-}
+        /// <summary>
+        ///  The reason why this FormulaError was created.
+        /// </summary>
+        public string Reason { get; private set; }
+    }
 }
 /**
  * A static class for stack extensions
