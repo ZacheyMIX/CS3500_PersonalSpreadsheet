@@ -7,6 +7,7 @@ namespace FormulaTests
     [TestClass]
     public class FormulaTests
     {
+        //Hello
         [TestMethod]
         public void testEquals()
         {
