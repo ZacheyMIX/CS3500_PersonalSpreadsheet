@@ -985,7 +985,7 @@ namespace PS2GradingTests
             DependencyGraph t = new DependencyGraph();
 
             // A bunch of strings to use
-            const int SIZE = 1000;
+            const int SIZE = 100;
             string[] letters = new string[SIZE];
             for (int i = 0; i < SIZE; i++)
             {
@@ -1078,6 +1078,8 @@ namespace PS2GradingTests
         {
             StressTest15();
         }
+
+        
 
     }
 }
