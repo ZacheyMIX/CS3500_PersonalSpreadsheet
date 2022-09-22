@@ -11,15 +11,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraph", "Dependen
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DependencyGraphTests", "DependencyGraphTests\DependencyGraphTests.csproj", "{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FormulaEvaluatorTests", "FormulaEvaluatorTests\FormulaEvaluatorTests.csproj", "{C12D08A6-10F5-4ECE-809E-B77E4054841B}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Formula", "Formula\Formula.csproj", "{9A89D91B-CB17-4F2E-B8DC-218F774F56FE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FormulaTests", "FormulaTests\FormulaTests.csproj", "{77707A18-832F-4D37-ACC0-DAD6214AFF6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spreadsheet", "Spreadsheet\Spreadsheet.csproj", "{0DEF3DF3-4D28-4E02-B7ED-C941B04E773D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Spreadsheet", "Spreadsheet\Spreadsheet.csproj", "{0DEF3DF3-4D28-4E02-B7ED-C941B04E773D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpreadsheetTests", "SpreadsheetTests\SpreadsheetTests.csproj", "{0246BBCF-A2E0-4BB9-9481-FE27C79F29CC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SpreadsheetTests", "SpreadsheetTests\SpreadsheetTests.csproj", "{0246BBCF-A2E0-4BB9-9481-FE27C79F29CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,10 +41,6 @@ Global
 		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC9D4445-14E9-4D88-A5DC-B4E87F62D829}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C12D08A6-10F5-4ECE-809E-B77E4054841B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C12D08A6-10F5-4ECE-809E-B77E4054841B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C12D08A6-10F5-4ECE-809E-B77E4054841B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C12D08A6-10F5-4ECE-809E-B77E4054841B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{9A89D91B-CB17-4F2E-B8DC-218F774F56FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9A89D91B-CB17-4F2E-B8DC-218F774F56FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9A89D91B-CB17-4F2E-B8DC-218F774F56FE}.Release|Any CPU.ActiveCfg = Release|Any CPU

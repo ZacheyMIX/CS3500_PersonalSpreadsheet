@@ -5,7 +5,7 @@ class test
     /**
      * This method will lookup variable names and check its value. If no value exists, throw an IllegalArgument
      */
-    public static int simpleLookUp(String x)
+    public int simpleLookUp(String x)
     {
         if (x == "a4")
         {
@@ -18,9 +18,15 @@ class test
         else
             throw new ArgumentException("Unknown Variable");
     }
-    static void Main(String[] args)
+
+
+    public static void Main(string[] args)
     {
-        //Expecting 6
-        Console.WriteLine(Evaluator.Evaluate("2+3*5+(3+4*8)*5+2", simpleLookUp));
+        List<String> list = new List<String>();
+        list.Add("b1");
+        list.Add("c1");
+        list.Insert(0, "a1");
+        Console.WriteLine(list.Count);
     }
+
 }

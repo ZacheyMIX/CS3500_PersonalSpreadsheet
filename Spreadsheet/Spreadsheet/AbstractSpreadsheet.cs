@@ -181,8 +181,11 @@ namespace SS
 
         /// <summary>
         /// A helper for the GetCellsToRecalculate method.
-        /// 
-        ///   -- You should fully comment what is going on below --
+        /// This recursive method takes in the starting cell, the recursive cell, a visited set that represents cells visited,
+        /// and a changed LinkedList which represents the cells the need to be changed.
+        /// if a directdependent within name is equal to start, throws a CircularExpression
+        /// Once all DirectDependents of name have been visited and no longer contains their direct dependents, add
+        /// all cells visited to the first of the changed linked list 
         /// </summary>
         private void Visit(string start, string name, ISet<string> visited, LinkedList<string> changed)
         {

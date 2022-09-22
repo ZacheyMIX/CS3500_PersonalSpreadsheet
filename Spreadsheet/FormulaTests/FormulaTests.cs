@@ -7,334 +7,479 @@ namespace FormulaTests
     [TestClass]
     public class FormulaTests
     {
-        //Hello
-        [TestMethod]
-        public void testEquals()
-        {
-            Formula t = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-            Formula t2 = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-            Assert.IsTrue(t.Equals(t2));
-            Assert.IsTrue(t2.Equals(t));
-            Assert.IsTrue(t == t2);
-            Assert.IsTrue(t2 == t);
-            Assert.IsFalse(t != t2);
-            Assert.IsFalse(t2 != t);
-        }
 
-        [TestMethod]
-        public void testEqualsWithDouble()
+        [TestClass]
+        public class GradingTests
         {
-            Formula t = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-            Formula t2 = new Formula("32.00 + A32_C3_F * _A983BC_", s => s, s => true);
-            Assert.IsTrue(t.Equals(t2));
-            Assert.IsTrue(t2.Equals(t));
-            Assert.IsTrue(t == t2);
-            Assert.IsTrue(t2 == t);
-            Assert.IsFalse(t != t2);
-            Assert.IsFalse(t2 != t);
-        }
 
-        [TestMethod]
-        public void testUnEquals()
-        {
-            Formula t = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-            Formula t2 = new Formula("32.001 + A32_C3_F * _A983BC_", s => s, s => true);
-            Assert.IsFalse(t.Equals(t2));
-            Assert.IsFalse(t2.Equals(t));
-            Assert.IsFalse(t == t2);
-            Assert.IsFalse(t2 == t);
-            Assert.IsTrue(t != t2);
-            Assert.IsTrue(t2 != t);
-        }
+            // Normalizer tests
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("1")]
+            public void TestNormalizerGetVars()
+            {
+                Formula f = new Formula("2+x1", s => s.ToUpper(), s => true);
+                HashSet<string> vars = new HashSet<string>(f.GetVariables());
 
-        [TestMethod]
-        public void testUnEqualHashCode()
-        {
-            Formula t = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-            Formula t2 = new Formula("32.00 + A32_C3_F * _A983BC", s => s, s => true);
-            Assert.IsTrue(t.GetHashCode() != t2.GetHashCode());
-            Assert.IsTrue(t2.GetHashCode() != t.GetHashCode());
-            Assert.IsFalse(t.GetHashCode() == t2.GetHashCode());
-            Assert.IsFalse(t2.GetHashCode() == t.GetHashCode());
-        }
+                Assert.IsTrue(vars.SetEquals(new HashSet<string> { "X1" }));
+            }
 
-        [TestMethod]
-        public void testEqualHashCode()
-        {
-            Formula t = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-            Formula t2 = new Formula("32.00 + A32_C3_F * _A983BC_", s => s, s => true);
-            Assert.IsTrue(t.GetHashCode() == t2.GetHashCode());
-            Assert.IsTrue(t2.GetHashCode() == t.GetHashCode());
-            Assert.IsFalse(t.GetHashCode() != t2.GetHashCode());
-            Assert.IsFalse(t2.GetHashCode() != t.GetHashCode());
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("2")]
+            public void TestNormalizerEquals()
+            {
+                Formula f = new Formula("2+x1", s => s.ToUpper(), s => true);
+                Formula f2 = new Formula("2+X1", s => s.ToUpper(), s => true);
 
-        //[TestMethod]
-        //public void getVariablesTest()
-        //{
-        //    Formula t = new Formula("32 + A32_C3_F * _A983BC_", s => s, s => true);
-        //    List<String> test = new List<String>();
-        //    IEnumerable<String> variables = t.GetVariables();
-        //    Assert.AreEqual(test, variables);
-        //}
+                Assert.IsTrue(f.Equals(f2));
+            }
 
-        [TestMethod]
-        public void validFormulaTest2()
-        {
-            Formula t = new Formula("(32 + A32_C3_F) * _A983BC_", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("3")]
+            public void TestNormalizerToString()
+            {
+                Formula f = new Formula("2+x1", s => s.ToUpper(), s => true);
+                Formula f2 = new Formula(f.ToString());
 
-        [TestMethod]
-        public void validFormulaTest3()
-        {
-            Formula t = new Formula("A32_C3_F + 32 * _A983BC_", s => s, s => true);
-        }
+                Assert.IsTrue(f.Equals(f2));
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void badParanthesisTest()
-        {
-            Formula t = new Formula("((32 + 3)", s => s, s => true);
-        }
+            // Validator tests
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("4")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestValidatorFalse()
+            {
+                Formula f = new Formula("2+x1", s => s, s => false);
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void badClosingToken()
-        {
-            Formula t = new Formula("((32 + 3)*", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("5")]
+            public void TestValidatorX1()
+            {
+                Formula f = new Formula("2+x", s => s, s => (s == "x"));
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void badParanthesisFormulaTest()
-        {
-            Formula t = new Formula("(5 + (AB / 7)", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("6")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestValidatorX2()
+            {
+                Formula f = new Formula("2+y1", s => s, s => (s == "x"));
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void badClosingParenthesisTest()
-        {
-            Formula t = new Formula("(3 + A3) + C2) + 3", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("7")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestValidatorX3()
+            {
+                Formula f = new Formula("2+x1", s => s, s => (s == "x"));
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void emptyTest()
-        {
-            Formula t = new Formula("", s => s, s => true);
-        }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void startingTokenTest()
-        {
-            Formula t = new Formula("*3(2", s => s, s => true);  
-        }
+            // Simple tests that return FormulaErrors
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("8")]
+            public void TestUnknownVariable()
+            {
+                Formula f = new Formula("2+X1");
+                Assert.IsInstanceOfType(f.Evaluate(s => { throw new ArgumentException("Unknown variable"); }), typeof(FormulaError));
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void closingTokenTest()
-        {
-            Formula t = new Formula("3 + ( + C2 + (", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("9")]
+            public void TestDivideByZero()
+            {
+                Formula f = new Formula("5/0");
+                Assert.IsInstanceOfType(f.Evaluate(s => 0), typeof(FormulaError));
+            }
 
-        [TestMethod]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void invalidTokenTest()
-        {
-            Formula t = new Formula("3 + ($ + C2) + 3", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("10")]
+            public void TestDivideByZeroVars()
+            {
+                Formula f = new Formula("(5 + X1) / (X1 - 3)");
+                Assert.IsInstanceOfType(f.Evaluate(s => 3), typeof(FormulaError));
+            }
 
-        [TestMethod()]
-        public void TestSingleNumber()
-        {
-            Formula t = new Formula("5", s => s, s => true);
-            Assert.AreEqual(5.0, t.Evaluate(s => 0));
-        }
 
-        [TestMethod()]
-        public void TestSingleVariable()
-        {
-            Formula t = new Formula("X5", s => s, s => true);
-            Assert.AreEqual(13.0, t.Evaluate(s => 13));
-        }
+            // Tests of syntax errors detected by the constructor
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("11")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestSingleOperator()
+            {
+                Formula f = new Formula("+");
+            }
 
-        [TestMethod()]
-        public void TestAddition()
-        {
-            Formula t = new Formula("5+3", s => s, s => true);
-            Assert.AreEqual(8.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("12")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestExtraOperator()
+            {
+                Formula f = new Formula("2+5+");
+            }
 
-        [TestMethod()]
-        public void TestSubtraction()
-        {
-            Formula t = new Formula("18-10", s => s, s => true);
-            Assert.AreEqual(8.0, t.Evaluate( s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("13")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestExtraCloseParen()
+            {
+                Formula f = new Formula("2+5*7)");
+            }
 
-        [TestMethod()]
-        public void TestMultiplication()
-        {
-            Formula t = new Formula("2*4", s => s, s => true);
-            Assert.AreEqual(8.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("14")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestExtraOpenParen()
+            {
+                Formula f = new Formula("((3+5*7)");
+            }
 
-        [TestMethod()]
-        public void TestDivision()
-        {
-            Formula t = new Formula("16/2", s => s, s => true);
-            Assert.AreEqual(8.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("15")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestNoOperator()
+            {
+                Formula f = new Formula("5x");
+            }
 
-        [TestMethod()]
-        public void TestArithmeticWithVariable()
-        {
-            Formula t = new Formula("2+X1", s => s, s => true);
-            Assert.AreEqual(6.0, t.Evaluate(s => 4));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("16")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestNoOperator2()
+            {
+                Formula f = new Formula("5+5x");
+            }
 
-        [TestMethod()]
-        [ExpectedException(typeof(ArgumentException))]
-        public void TestUnknownVariable()
-        {
-            Formula t = new Formula("2+X1", s => s, s => true);
-            t.Evaluate(s => { throw new ArgumentException("Unknown variable"); });
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("17")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestNoOperator3()
+            {
+                Formula f = new Formula("5+7+(5)8");
+            }
 
-        [TestMethod()]
-        public void TestLeftToRight()
-        {
-            Formula t = new Formula("2*6+3", s => s, s => true);
-            Assert.AreEqual(15.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("18")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestNoOperator4()
+            {
+                Formula f = new Formula("5 5");
+            }
 
-        [TestMethod()]
-        public void TestOrderOperations()
-        {
-            Formula t = new Formula("2+6*3", s => s, s => true);
-            Assert.AreEqual(20.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("19")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestDoubleOperator()
+            {
+                Formula f = new Formula("5 + + 3");
+            }
 
-        [TestMethod()]
-        public void TestParenthesesTimes()
-        {
-            Formula t = new Formula("(2+6)*3", s => s, s => true);
-            Assert.AreEqual(24.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("20")]
+            [ExpectedException(typeof(FormulaFormatException))]
+            public void TestEmpty()
+            {
+                Formula f = new Formula("");
+            }
 
-        [TestMethod()]
-        public void TestTimesParentheses()
-        {
-            Formula t = new Formula("2*(3+5)", s => s, s => true);
-            Assert.AreEqual(16.0, t.Evaluate(s => 0));
-        }
+            // Some more complicated formula evaluations
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("21")]
+            public void TestComplex1()
+            {
+                Formula f = new Formula("y1*3-8/2+4*(8-9*2)/14*x7");
+                Assert.AreEqual(5.14285714285714, (double)f.Evaluate(s => (s == "x7") ? 1 : 4), 1e-9);
+            }
 
-        [TestMethod()]
-        public void TestPlusParentheses()
-        {
-            Formula t = new Formula("2+(3+5)", s => s, s => true);
-            Assert.AreEqual(10.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("22")]
+            public void TestRightParens()
+            {
+                Formula f = new Formula("x1+(x2+(x3+(x4+(x5+x6))))");
+                Assert.AreEqual(6, (double)f.Evaluate(s => 1), 1e-9);
+            }
 
-        [TestMethod()]
-        public void TestPlusComplex()
-        {
-            Formula t = new Formula("2+(3+5*9)", s => s, s => true);
-            Assert.AreEqual(50.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("23")]
+            public void TestLeftParens()
+            {
+                Formula f = new Formula("((((x1+x2)+x3)+x4)+x5)+x6");
+                Assert.AreEqual(12, (double)f.Evaluate(s => 2), 1e-9);
+            }
 
-        [TestMethod()]
-        public void TestOperatorAfterParens()
-        {
-            Formula t = new Formula("(1*1)-2/2", s => s, s => true);
-            Assert.AreEqual(0.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("53")]
+            public void TestRepeatedVar()
+            {
+                Formula f = new Formula("a4-a4*a4/a4");
+                Assert.AreEqual(0, (double)f.Evaluate(s => 3), 1e-9);
+            }
 
-        [TestMethod()]
-        public void TestComplexTimesParentheses()
-        {
-            Formula t = new Formula("2+3*(3+5)", s => s, s => true);
-            Assert.AreEqual(26.0, t.Evaluate(s => 0));
-        }
+            // Test of the Equals method
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("24")]
+            public void TestEqualsBasic()
+            {
+                Formula f1 = new Formula("X1+X2");
+                Formula f2 = new Formula("X1+X2");
+                Assert.IsTrue(f1.Equals(f2));
+            }
 
-        [TestMethod()]
-        public void TestComplexAndParentheses()
-        {
-            Formula t = new Formula("2+3*5+(3+4*8)*5+2", s => s, s => true);
-            Assert.AreEqual(194.0, t.Evaluate(s => 0));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("25")]
+            public void TestEqualsWhitespace()
+            {
+                Formula f1 = new Formula("X1+X2");
+                Formula f2 = new Formula(" X1  +  X2   ");
+                Assert.IsTrue(f1.Equals(f2));
+            }
 
-        [TestMethod()]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void TestDivideByZero()
-        {
-            Formula t = new Formula("5/0", s => s, s => true);
-            t.Evaluate(s => 0);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("26")]
+            public void TestEqualsDouble()
+            {
+                Formula f1 = new Formula("2+X1*3.00");
+                Formula f2 = new Formula("2.00+X1*3.0");
+                Assert.IsTrue(f1.Equals(f2));
+            }
 
-        [TestMethod()]
-        public void TestToString()
-        {
-            Formula t = new Formula("2+3*5+(3+4*8)*5+2", s => s, s => true);
-            Assert.AreEqual("2+3*5+(3+4*8)*5+2", t.ToString());
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("27")]
+            public void TestEqualsComplex()
+            {
+                Formula f1 = new Formula("1e-2 + X5 + 17.00 * 19 ");
+                Formula f2 = new Formula("   0.0100  +     X5+ 17 * 19.00000 ");
+                Assert.IsTrue(f1.Equals(f2));
+            }
 
-        [TestMethod()]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void TestSingleOperator()
-        {
-            Formula t = new Formula("+", s => s, s => true);
-        }
 
-        [TestMethod()]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void TestExtraOperator()
-        {
-            Formula t = new Formula("2+5+", s => s, s => true);
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("28")]
+            public void TestEqualsNullAndString()
+            {
+                Formula f = new Formula("2");
+                Assert.IsFalse(f.Equals(null));
+                Assert.IsFalse(f.Equals(""));
+            }
 
-        [TestMethod()]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void TestExtraParentheses()
-        {
-            Formula t = new Formula("2+5*7)", s => s, s => true);
-        }
 
-        [TestMethod()]
-        [ExpectedException(typeof(FormulaFormatException))]
-        public void TestParensNoOperator()
-        {
-            Formula t = new Formula("5+7+(5)8", s => s, s => true);
-        }
+            // Tests of == operator
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("29")]
+            public void TestEq()
+            {
+                Formula f1 = new Formula("2");
+                Formula f2 = new Formula("2");
+                Assert.IsTrue(f1 == f2);
+            }
 
-        [TestMethod()]
-        public void TestComplexMultiVar()
-        {
-            Formula t = new Formula("y1*3-8/2+4*(8-9*2)/80*x7", s => s, s => true);
-            Assert.AreEqual(7.5, t.Evaluate(s => (s == "x7") ? 1 : 4));
-        }
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("30")]
+            public void TestEqFalse()
+            {
+                Formula f1 = new Formula("2");
+                Formula f2 = new Formula("5");
+                Assert.IsFalse(f1 == f2);
+            }
 
-        [TestMethod()]
-        public void TestComplexNestedParensRight()
-        {
-            Formula t = new Formula("x1+(x2+(x3+(x4+(x5+x6))))", s => s, s => true);
-            Assert.AreEqual(6.0, t.Evaluate(s => 1));
-        }
 
-        [TestMethod()]
-        public void TestComplexNestedParensLeft()
-        {
-            Formula t = new Formula("((((x1+x2)+x3)+x4)+x5)+x6", s => s, s => true);
-            Assert.AreEqual(12.0, t.Evaluate(s => 2));
-        }
+            // Tests of != operator
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("32")]
+            public void TestNotEq()
+            {
+                Formula f1 = new Formula("2");
+                Formula f2 = new Formula("2");
+                Assert.IsFalse(f1 != f2);
+            }
 
-        [TestMethod()]
-        public void TestRepeatedVar()
-        {
-            Formula t = new Formula("a4-a4*a4/a4", s => s, s => true);
-            Assert.AreEqual(0.0, t.Evaluate(s => 3));
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("33")]
+            public void TestNotEqTrue()
+            {
+                Formula f1 = new Formula("2");
+                Formula f2 = new Formula("5");
+                Assert.IsTrue(f1 != f2);
+            }
+
+
+            // Test of ToString method
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("34")]
+            public void TestString()
+            {
+                Formula f = new Formula("2*5");
+                Assert.IsTrue(f.Equals(new Formula(f.ToString())));
+            }
+
+
+            // Tests of GetHashCode method
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("35")]
+            public void TestHashCode()
+            {
+                Formula f1 = new Formula("2*5");
+                Formula f2 = new Formula("2*5");
+                Assert.IsTrue(f1.GetHashCode() == f2.GetHashCode());
+            }
+
+            // Technically the hashcodes could not be equal and still be valid,
+            // extremely unlikely though. Check their implementation if this fails.
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("36")]
+            public void TestHashCodeFalse()
+            {
+                Formula f1 = new Formula("2*5");
+                Formula f2 = new Formula("3/8*2+(7)");
+                Assert.IsTrue(f1.GetHashCode() != f2.GetHashCode());
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("37")]
+            public void TestHashCodeComplex()
+            {
+                Formula f1 = new Formula("2 * 5 + 4.00 - _x");
+                Formula f2 = new Formula("2*5+4-_x");
+                Assert.IsTrue(f1.GetHashCode() == f2.GetHashCode());
+            }
+
+
+            // Tests of GetVariables method
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("38")]
+            public void TestVarsNone()
+            {
+                Formula f = new Formula("2*5");
+                Assert.IsFalse(f.GetVariables().GetEnumerator().MoveNext());
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("39")]
+            public void TestVarsSimple()
+            {
+                Formula f = new Formula("2*X2");
+                List<string> actual = new List<string>(f.GetVariables());
+                HashSet<string> expected = new HashSet<string>() { "X2" };
+                Assert.AreEqual(actual.Count, 1);
+                Assert.IsTrue(expected.SetEquals(actual));
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("40")]
+            public void TestVarsTwo()
+            {
+                Formula f = new Formula("2*X2+Y3");
+                List<string> actual = new List<string>(f.GetVariables());
+                HashSet<string> expected = new HashSet<string>() { "Y3", "X2" };
+                Assert.AreEqual(actual.Count, 2);
+                Assert.IsTrue(expected.SetEquals(actual));
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("41")]
+            public void TestVarsDuplicate()
+            {
+                Formula f = new Formula("2*X2+X2");
+                List<string> actual = new List<string>(f.GetVariables());
+                HashSet<string> expected = new HashSet<string>() { "X2" };
+                Assert.AreEqual(actual.Count, 1);
+                Assert.IsTrue(expected.SetEquals(actual));
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("42")]
+            public void TestVarsComplex()
+            {
+                Formula f = new Formula("X1+Y2*X3*Y2+Z7+X1/Z8");
+                List<string> actual = new List<string>(f.GetVariables());
+                HashSet<string> expected = new HashSet<string>() { "X1", "Y2", "X3", "Z7", "Z8" };
+                Assert.AreEqual(actual.Count, 5);
+                Assert.IsTrue(expected.SetEquals(actual));
+            }
+
+            // Tests to make sure there can be more than one formula at a time
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("43")]
+            public void TestMultipleFormulae()
+            {
+                Formula f1 = new Formula("2 + a1");
+                Formula f2 = new Formula("3");
+                Assert.AreEqual(2.0, f1.Evaluate(x => 0));
+                Assert.AreEqual(3.0, f2.Evaluate(x => 0));
+                Assert.IsFalse(new Formula(f1.ToString()) == new Formula(f2.ToString()));
+                IEnumerator<string> f1Vars = f1.GetVariables().GetEnumerator();
+                IEnumerator<string> f2Vars = f2.GetVariables().GetEnumerator();
+                Assert.IsFalse(f2Vars.MoveNext());
+                Assert.IsTrue(f1Vars.MoveNext());
+            }
+
+            // Repeat this test to increase its weight
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("44")]
+            public void TestMultipleFormulaeB()
+            {
+                TestMultipleFormulae();
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("45")]
+            public void TestMultipleFormulaeC()
+            {
+                TestMultipleFormulae();
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("46")]
+            public void TestMultipleFormulaeD()
+            {
+                TestMultipleFormulae();
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("47")]
+            public void TestMultipleFormulaeE()
+            {
+                TestMultipleFormulae();
+            }
+
+            // Stress test for constructor
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("48")]
+            public void TestConstructor()
+            {
+                Formula f = new Formula("(((((2+3*X1)/(7e-5+X2-X4))*X5+.0005e+92)-8.2)*3.14159) * ((x2+3.1)-.00000000008)");
+            }
+
+            // This test is repeated to increase its weight
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("49")]
+            public void TestConstructorB()
+            {
+                Formula f = new Formula("(((((2+3*X1)/(7e-5+X2-X4))*X5+.0005e+92)-8.2)*3.14159) * ((x2+3.1)-.00000000008)");
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("50")]
+            public void TestConstructorC()
+            {
+                Formula f = new Formula("(((((2+3*X1)/(7e-5+X2-X4))*X5+.0005e+92)-8.2)*3.14159) * ((x2+3.1)-.00000000008)");
+            }
+
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("51")]
+            public void TestConstructorD()
+            {
+                Formula f = new Formula("(((((2+3*X1)/(7e-5+X2-X4))*X5+.0005e+92)-8.2)*3.14159) * ((x2+3.1)-.00000000008)");
+            }
+
+            // Stress test for constructor
+            [TestMethod(), Timeout(2000)]
+            [TestCategory("52")]
+            public void TestConstructorE()
+            {
+                Formula f = new Formula("(((((2+3*X1)/(7e-5+X2-X4))*X5+.0005e+92)-8.2)*3.14159) * ((x2+3.1)-.00000000008)");
+            }
         }
     }
 }

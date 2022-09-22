@@ -112,6 +112,7 @@ namespace SpreadsheetUtilities
             bool followVariableCheck = false;
             //A check book for when a closing bracket, variable, or number is made
             bool followOperatorCheck = false;
+            //Adds all tokens to a list of formulaTokens
             while (tokens.MoveNext())
             {
                 formulaTokens.Add(normalize(tokens.Current));
@@ -127,6 +128,7 @@ namespace SpreadsheetUtilities
             //Runs a do while loop on all of the tokens
             foreach(string currentToken in formulaTokens)
             {
+                //If the current token does not contain these tokens, then throws a FormulaFormatException
                 if (!(Regex.IsMatch(currentToken, @"[a-zA-Z0-9_()+/*-]")))
                 {
                     throw new FormulaFormatException("An invalid token is contained within the formula");
@@ -135,7 +137,7 @@ namespace SpreadsheetUtilities
                 //Followed by a variable, opening bracket, or a number
                 if (followVariableCheck is true)
                 {
-                    if (!(Regex.IsMatch(currentToken, @"^[a-zA-Z0-9_(]")))
+                    if (!(Regex.IsMatch(currentToken, @"^[a-zA-Z0-9_(.]")))
                         throw new FormulaFormatException("Opening bracket or operator is not followed by a number, variable, or opening paranthesis");
                     followVariableCheck = false;
                 }
@@ -145,7 +147,7 @@ namespace SpreadsheetUtilities
                 {
                     if (!(Regex.IsMatch(currentToken, @"^[*/+)-]")))
                         throw new FormulaFormatException("number, variable, or closing paranthesis is not followe by an operator or closing paranthesis");
-                    followVariableCheck = false;
+                    followOperatorCheck = false;
                 }
                 //When a opening bracket is used, marks the variable check for the next loop and bumps the opening bracket counter
                 if (currentToken is "(")
@@ -242,7 +244,15 @@ namespace SpreadsheetUtilities
                     if (StackExtensions.IsOnTop(opStack, "*") || StackExtensions.IsOnTop(opStack, "/"))
                     {
                         //Performs the proper calculation through pushresult, and pushes the result onto the valStack
-                        StackExtensions.PushResult(valStack, opStack.Pop(), currentValue);
+                        try
+                        {
+                            StackExtensions.PushResult(valStack, opStack.Pop(), currentValue);
+                        }
+                        catch (FormulaFormatException e)
+                        {
+                            return new FormulaError("Divide by zero occured");
+                        }
+                        
                     }
                     else
                         valStack.Push(currentValue);
@@ -279,7 +289,15 @@ namespace SpreadsheetUtilities
                         //If there is a * or / before the (, operate that function
                         if (!(opStack.Count is 0) && (opStack.Peek() is "*" || opStack.Peek() is "/"))
                         {
-                            StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
+                            try
+                            {
+                                StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
+                            }
+                            catch(FormulaFormatException e)
+                            {
+                                return new FormulaError("Divide by zero occured");
+                            }
+                            
                         }
                     }
                     //If ( is the next operator, than there is no need for it, remove
@@ -290,8 +308,16 @@ namespace SpreadsheetUtilities
                 //This else statement is for any other case such as variables
                 else
                 {
-                    //Grabs the value from the variable
-                    currentValue = lookup(substring);
+                    //Attempts to grab the value from the variable, if it fails returns a FormulaError
+                    try
+                    {
+                        currentValue = lookup(substring);
+                    }
+                    catch(ArgumentException e)
+                    {
+                        return new FormulaError("Variable Undefined");
+                    }
+                    
 
                     //Checks if the operator stack is empty, then checks which variable is on top for * or /
                     if (StackExtensions.IsOnTop(opStack, "*") || StackExtensions.IsOnTop(opStack, "/"))
@@ -327,11 +353,15 @@ namespace SpreadsheetUtilities
         /// </summary>
         public IEnumerable<String> GetVariables()
         {
-            IEnumerable<String> result = new List<String>();
+            List<String> variables = new List<String>();
             foreach(String currentToken in formulaTokens)
             {
-                if(Regex.IsMatch(currentToken, @"^[a-zA-Z_]"))
+                if(Regex.IsMatch(currentToken, @"^[a-zA-Z_]") && !(variables.Contains(currentToken)))
+                {
+                    variables.Add(currentToken);
                     yield return currentToken;
+                }
+                    
             }
         }
 
@@ -526,7 +556,7 @@ public static class StackExtensions
         {
             //Checks if the value is 0, if it is throws an argument exception
             if (val is 0)
-                throw new FormulaFormatException("Cannot divide by zero");
+               throw new FormulaFormatException("Cannot divide by zero");
             finalVal = stack.Pop() / val;
             stack.Push(finalVal);
         }
