@@ -6,7 +6,7 @@ namespace SS
     public class Spreadsheet : AbstractSpreadsheet
     {
         DependencyGraph depList;
-        Dictionary<string, string> cells;
+        Cell cells;
 
         /// <summary>
         /// Generates a spreadsheet with a dependency list and a dictionary of strings called list
@@ -14,7 +14,7 @@ namespace SS
         public Spreadsheet()
         {
             depList = new DependencyGraph();
-            cells = new Dictionary<string, string>();
+            cells = new Cell();
         }
 
         /// <summary>
@@ -42,34 +42,8 @@ namespace SS
             //Double integer for tryParse
             double n;
 
-            //Checks if name is valid
-            if (!isValid(name))
-                throw new InvalidNameException();
-
-            //Checks if name is contained in cells, returns empty string otherwise
-            if (!cells.ContainsKey(name))
-                return "";
-
-            //Checks type of content and returns accordingly
-            if (double.TryParse(cells[name], out n))
-                return n;
-            else if (isFormula(cells[name]))
-                return new Formula(cells[name]);
-            else
-                return cells[name];
-        }
-
-        /// <summary>
-        /// Helper method for GetCellContents that checks if the cells value is a formula
-        /// </summary>
-        /// <param name="value"></param>
-        /// <returns></returns>
-        private bool isFormula(string value)
-        {
-            if (!Regex.IsMatch(value, @"[+/*-]"))
-                return false;
-            return true;
-
+            //Calls the GetCellContent method in cells
+            return cells.GetCellContent(name);
         }
 
         /// <summary>
@@ -78,7 +52,7 @@ namespace SS
 
         public override IEnumerable<string> GetNamesOfAllNonemptyCells()
         {
-            foreach(string name in cells.Keys)
+            foreach(string name in cells.Name.Keys)
             {
                 yield return name;
             }
@@ -229,6 +203,130 @@ namespace SS
 
             while (depEnum.MoveNext())
                 yield return depEnum.Current;
+        }
+    }
+
+    /// <summary>
+    /// A Cell class that represents a cell within a spreadsheet.
+    /// A Cell contains a name, its content, and its value.
+    /// Content consists of a string, a double, or a Formula
+    /// Value consists of a string, a double, or a FormulaError
+    /// </summary>
+    public class Cell
+    {
+        Dictionary<string, string> cell;
+
+        /// <summary>
+        /// The cell constructor that creates a new dictionary of strings
+        /// </summary>
+        public Cell()
+        {
+            cell = new Dictionary<string, string>();
+        }
+
+        public Dictionary<string, string> Name
+        {
+            get { return cell; }
+        }
+
+        /// <summary>
+        /// Sets the named cells content if a string is passed in
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="text"></param>
+        public void SetCellContent(string name, string text)
+        {
+            if (cell.ContainsKey(name))
+                cell[name] = text;
+            else
+                cell.Add(name, text);
+        }
+
+        /// <summary>
+        /// Sets the named cells content if a double is passed in 
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="num"></param>
+        public void SetCellContent(string name, double num)
+        {
+            if (cell.ContainsKey(name))
+                cell[name] = num.ToString();
+            else
+                cell.Add(name, num.ToString());
+        }
+
+        /// <summary>
+        /// Sets the named cells content if a Formula is passed in
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="formula"></param>
+        public void SetCellContent(string name, Formula formula)
+        {
+            if (cell.ContainsKey(name))
+                cell[name] = formula.ToString();
+            else
+                cell.Add(name, formula.ToString());
+        }
+
+        /// <summary>
+        /// This method grabs the content of named cell and returns it in its original form
+        /// string, double, or Formula
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
+        public object GetCellContent(string name)
+        {
+            //Double integer for tryParse
+            double n;
+
+            //Checks if name is contained in cells, returns empty string otherwise
+            if (!cell.ContainsKey(name))
+                return "";
+
+            //Checks type of content and returns accordingly
+            if (double.TryParse(cell[name], out n))
+                return n;
+            else if (isFormula(cell[name]))
+                return new Formula(cell[name]);
+            else
+                return cell[name];
+        }
+
+        /// <summary>
+        /// This method returns the value of the named cells content
+        /// either a string, a double, or a FormulaError
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="lookup"></param>
+        /// <returns></returns>
+        public object GetCellValue(string name, Func<string, double> lookup)
+        {
+            //Double integer for tryParse
+            double n;
+
+            //Checks if name is contained in cells, returns empty string otherwise
+            if (!cell.ContainsKey(name))
+                return "";
+            //Checks type of content and returns accordingly
+            if (double.TryParse(cell[name], out n))
+                return n;
+            else if (isFormula(cell[name]))
+                return new Formula(cell[name]).Evaluate(lookup);
+            else
+                return cell[name];
+        }
+
+        /// <summary>
+        /// Private helper method to check if a string is a formula
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        private bool isFormula(string value)
+        {
+            if (!Regex.IsMatch(value, @"[+/*-]"))
+                return false;
+            return true;
+
         }
     }
 }
