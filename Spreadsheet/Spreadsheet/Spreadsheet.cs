@@ -39,10 +39,12 @@ namespace SS
         /// </summary>
         public override object GetCellContents(string name)
         {
-            //Double integer for tryParse
-            double n;
+            //Checks if name is valid
+            if (!(isValid(name)))
+                throw new InvalidNameException();
 
-            //Calls the GetCellContent method in cells
+            //Returns the named cells content in its original form
+            //string, double, or Formula
             return cells.GetCellContent(name);
         }
 
@@ -75,10 +77,7 @@ namespace SS
                 throw new InvalidNameException();
 
             //Either adds a new entry to cell or replaces an existing ones content
-            if (cells.ContainsKey(name))
-                cells[name] = number.ToString();
-            else
-                cells.Add(name, number.ToString());
+            cells.SetCellContent(name, number);
 
             //Generates a list of variables of name and its dependees 
             IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
@@ -109,10 +108,7 @@ namespace SS
                 throw new InvalidNameException();
 
             //Either puts in a new name and content into cells or replaces an existing names content with new content
-            if (cells.ContainsKey(name))
-                cells[name] = text;
-            else
-                cells.Add(name, text);
+            cells.SetCellContent(name, text);
 
             //Generates a list of variables of name and its dependees 
             IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
@@ -158,19 +154,17 @@ namespace SS
 
             //Either adds a new name and its content to cells or replaces an already existing cells content with new content
             //Then either adds dependencies or replaces them
-            if (cells.ContainsKey(name))
+            cells.SetCellContent(name, formula);
+            if (cells.Name.ContainsKey(name))
             {
-                cells[name] = formula.ToString();
                 depList.ReplaceDependents(name, formula.GetVariables());
             }
             else {
-                cells.Add(name, formula.ToString());
                 foreach (string variable in formula.GetVariables())
                 {
                     depList.AddDependency(name, variable);
                 }
             }
-            
 
             //Generates a list of variables of name and its dependees 
             IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
@@ -326,7 +320,6 @@ namespace SS
             if (!Regex.IsMatch(value, @"[+/*-]"))
                 return false;
             return true;
-
         }
     }
 }
