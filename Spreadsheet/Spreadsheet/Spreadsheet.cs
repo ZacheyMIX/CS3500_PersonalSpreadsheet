@@ -153,18 +153,10 @@ namespace SS
             }
 
             //Either adds a new name and its content to cells or replaces an already existing cells content with new content
-            //Then either adds dependencies or replaces them
+            //Then either replaces all variables in deplist with name
             cells.SetCellContent(name, formula);
-            if (cells.Name.ContainsKey(name))
-            {
-                depList.ReplaceDependents(name, formula.GetVariables());
-            }
-            else {
-                foreach (string variable in formula.GetVariables())
-                {
-                    depList.AddDependency(name, variable);
-                }
-            }
+            depList.ReplaceDependents(name, formula.GetVariables());
+
 
             //Generates a list of variables of name and its dependees 
             IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
