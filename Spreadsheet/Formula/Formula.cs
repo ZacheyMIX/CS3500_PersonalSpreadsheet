@@ -248,7 +248,7 @@ namespace SpreadsheetUtilities
                         {
                             StackExtensions.PushResult(valStack, opStack.Pop(), currentValue);
                         }
-                        catch (FormulaFormatException e)
+                        catch (FormulaFormatException)
                         {
                             return new FormulaError("Divide by zero occured");
                         }
@@ -293,7 +293,7 @@ namespace SpreadsheetUtilities
                             {
                                 StackExtensions.PushResult(valStack, opStack.Pop(), valStack.Pop());
                             }
-                            catch(FormulaFormatException e)
+                            catch(FormulaFormatException)
                             {
                                 return new FormulaError("Divide by zero occured");
                             }
@@ -313,7 +313,7 @@ namespace SpreadsheetUtilities
                     {
                         currentValue = lookup(substring);
                     }
-                    catch(ArgumentException e)
+                    catch(ArgumentException)
                     {
                         return new FormulaError("Variable Undefined");
                     }
