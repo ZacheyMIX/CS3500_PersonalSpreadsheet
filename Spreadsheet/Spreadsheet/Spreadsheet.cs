@@ -7,21 +7,27 @@ namespace SS
     {
         DependencyGraph depList;
         Dictionary<string, string> cells;
-        //A zero argument consructor that generates a spreadsheet
+
+        /// <summary>
+        /// Generates a spreadsheet with a dependency list and a dictionary of strings called list
+        /// </summary>
         public Spreadsheet()
         {
             depList = new DependencyGraph();
             cells = new Dictionary<string, string>();
         }
 
-        //The private helper method for checking if a cell given has a valid name
+        /// <summary>
+        /// The private helper method for checking if a cell given has a valid name
+        /// A valid name must start with a letter or an underscore and must only
+        /// consist of leters, numbers, and underscores.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         private bool isValid(string name)
         {
-            //If the string starts with a letter or a underscore and then checks if the string only contains
-            //letters, numbers, or underscores.  If it passes, returns true
             if (Regex.IsMatch(name, @"^[a-zA-Z_]") && Regex.IsMatch(name, @"[a-zA-Z0-9._]"))
                 return true;
-            //Otherwise returns false
             return false;
         }
 
@@ -33,22 +39,22 @@ namespace SS
         /// </summary>
         public override object GetCellContents(string name)
         {
-            //Double integer for tryParse statements
+            //Double integer for tryParse
             double n;
 
-            //Checks if name is valid, if not throws InvalidNameException
-            if (!(isValid(name)))
+            //Checks if name is valid
+            if (!isValid(name))
                 throw new InvalidNameException();
-            //If name has not been intialized, return an empty string
-            if (!(cells.ContainsKey(name)))
+
+            //Checks if name is contained in cells, returns empty string otherwise
+            if (!cells.ContainsKey(name))
                 return "";
-            //TryParses the value of the cell, if successful, returns the double value
+
+            //Checks type of content and returns accordingly
             if (double.TryParse(cells[name], out n))
                 return n;
-            //Checks if the value in name is a formula, if it is returns it as a new formula
             else if (isFormula(cells[name]))
                 return new Formula(cells[name]);
-            //Otherwise returns the value of name as a string
             else
                 return cells[name];
         }
@@ -60,10 +66,8 @@ namespace SS
         /// <returns></returns>
         private bool isFormula(string value)
         {
-            //Checks if the value contains any operators, if it doesnt returns false
-            if (!(Regex.IsMatch(value, @"[+/*-]")))
+            if (!Regex.IsMatch(value, @"[+/*-]"))
                 return false;
-            //Otherwise returns true
             return true;
 
         }
@@ -92,28 +96,26 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, double number)
         {
-            //Checks if name is valid, if not throw InvalidNameException
+            //Checks if name is valid
             if (!(isValid(name)))
                 throw new InvalidNameException();
 
-            //If cells contains the name, change the value
+            //Either adds a new entry to cell or replaces an existing ones content
             if (cells.ContainsKey(name))
                 cells[name] = number.ToString();
-            //If cells does not contain name, adds the name and value to cells
             else
                 cells.Add(name, number.ToString());
 
-            //Creates an enumerator of the variables that name is a dependent of
-            IEnumerator<string> variableEnum = depList.GetDependees(name).GetEnumerator();
-            //Creates a list of variables to build
+            //Generates a list of variables of name and its dependees 
+            IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
             IList<string> variableList = new List<string>();
             variableList.Add(name);
-            //Adds the variables contained in variableEnum to variableList
             while (variableEnum.MoveNext())
             {
                 variableList.Add(variableEnum.Current);
             }
-            return variableList;
+
+            return variableList; 
         }
 
         /// <summary>
@@ -128,27 +130,25 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, string text)
         {
-            //Checks if name is valid, if not throw InvalidNameException
+            //Checks if name is valid
             if (!(isValid(name)))
                 throw new InvalidNameException();
 
-            //If cells contains the name, change the value
+            //Either puts in a new name and content into cells or replaces an existing names content with new content
             if (cells.ContainsKey(name))
                 cells[name] = text;
-            //If cells does not contain name, adds the name and value to cells
             else
                 cells.Add(name, text);
 
-            //Creates an enumerator of the variables that name is a dependent of
-            IEnumerator<string> variableEnum = depList.GetDependees(name).GetEnumerator();
-            //Creates a list of variables to build
+            //Generates a list of variables of name and its dependees 
+            IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
             IList<string> variableList = new List<string>();
             variableList.Add(name);
-            //Adds the variables contained in variableEnum to variableList
             while (variableEnum.MoveNext())
             {
                 variableList.Add(variableEnum.Current);
             }
+
             return variableList;
         }
 
@@ -167,41 +167,46 @@ namespace SS
         /// </summary>
         public override IList<string> SetCellContents(string name, Formula formula)
         {
-            //Checks if name is valid, if not throw InvalidNameException
+            //Checks if the name is valid
             if (!(isValid(name)))
                 throw new InvalidNameException();
-            //Creates an enumerator of the variables that name is a dependent of
-            IEnumerator<string> variableEnum = depList.GetDependees(name).GetEnumerator();
-            //Creates a list of variables to build
-            IList<string> variableList = new List<string>();
-            //Adds the variables contained in variableEnum to variableList
-            while (variableEnum.MoveNext())
-            {
-                variableList.Add(variableEnum.Current);
-            }
-            //If variableList contains name, throw CircularExpression
+
+            //Checks if formula contains name
             if (formula.GetVariables().Contains(name))
                 throw new CircularException();
-            //If variables within the formula have dependency to the name, throw CircularExpression
-            foreach (string variable in variableList)
+
+            //Checks if variables in formula are dependent of name
+            foreach (string variable in formula.GetVariables())
             {
                 if (depList.GetDependents(variable).Contains(name))
                     throw new CircularException();
             }
-            //Add variables in formula to dependencyList
-            foreach (string variable in formula.GetVariables())
-            {
-                depList.AddDependency(name, variable);
-            }
-            //inserts name into variable list at the begining
-            variableList.Insert(0, name);
-            //If cells contains the name, change the value
+
+            //Either adds a new name and its content to cells or replaces an already existing cells content with new content
+            //Then either adds dependencies or replaces them
             if (cells.ContainsKey(name))
+            {
                 cells[name] = formula.ToString();
-            //If cells does not contain name, adds the name and value to cells
-            else
+                depList.ReplaceDependents(name, formula.GetVariables());
+            }
+            else {
                 cells.Add(name, formula.ToString());
-            //Returns final variableList
+                foreach (string variable in formula.GetVariables())
+                {
+                    depList.AddDependency(name, variable);
+                }
+            }
+            
+
+            //Generates a list of variables of name and its dependees 
+            IEnumerator<string> variableEnum = GetDirectDependents(name).GetEnumerator();
+            IList<string> variableList = new List<string>();
+            variableList.Add(name);
+            while (variableEnum.MoveNext())
+            {
+                variableList.Add(variableEnum.Current);
+            }
+
             return variableList;
         }
 
@@ -220,14 +225,8 @@ namespace SS
         /// </summary>
         protected override IEnumerable<string> GetDirectDependents(string name)
         {
-            //Checks if name is valid, otherwise throws a InvalidNameException
-            if(!isValid(name))
-                throw new InvalidNameException();
-            //Starts a build with name
-            yield return name;
-            //Creates an enumerator of names dependents
-            IEnumerator<string> depEnum = depList.GetDependents(name).GetEnumerator();
-            //Builds the IEnumerable with all of names dependents
+            IEnumerator<string> depEnum = depList.GetDependees(name).GetEnumerator();
+
             while (depEnum.MoveNext())
                 yield return depEnum.Current;
         }
