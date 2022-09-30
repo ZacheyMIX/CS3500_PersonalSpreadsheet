@@ -4,6 +4,12 @@ using Newtonsoft.Json;
 
 namespace SS
 {
+    /// <summary>
+    /// Written by Zach Blomquist
+    /// 9/29/22
+    /// This class represents a spreadsheet that uses a new cell class, dependency for each cell applicable, and incorporates
+    /// the formula class for possible formulas within the cells
+    /// </summary>
     public class Spreadsheet : AbstractSpreadsheet
     {
         DependencyGraph depList;
@@ -11,6 +17,7 @@ namespace SS
         Func<string, string> normalize;
         Func<string, bool> isValid;
         string version;
+        string filePath;
 
 
         public override bool Changed { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
@@ -20,17 +27,27 @@ namespace SS
         /// <summary>
         /// Generates a spreadsheet with a dependency list and a dictionary of strings called list
         /// </summary>
-        public Spreadsheet()
+        public Spreadsheet() : this(s=>true, s => s, "default")
         {
-            depList = new DependencyGraph();
-            cells = new Cell();
         }
 
-        public Spreadsheet(Func<string, bool> isValid, Func<string, string> normalize, string version)
+        public Spreadsheet(Func<string, bool> isValid, Func<string, string> normalize, string version) : base(isValid, normalize, version)
         {
+            depList = new DependencyGraph();
+            cells = new Cell(isValid, normalize);
             this.isValid = isValid;
-            this.version = version;
             this.normalize = normalize;
+            this.version = version;
+        }
+
+        public Spreadsheet(string filePath, Func<string, bool> isValid, Func<string, string> normalize, string version) : base(isValid, normalize, version)
+        {
+            depList = new DependencyGraph();
+            cells = new Cell(isValid, normalize);
+            this.isValid = isValid;
+            this.normalize = normalize;
+            this.version = version;
+            this.filePath = filePath;
         }
 
         /// <summary>
@@ -42,7 +59,7 @@ namespace SS
         /// <returns></returns>
         private bool isValidName(string name)
         {
-            if (Regex.IsMatch(name, @"^[a-zA-Z]") && Regex.IsMatch(name, @"[a-zA-Z0-9]"))
+            if (Regex.IsMatch(name, @"^[a-zA-Z]+[0-9]+$") && isValid(name))
                 return true;
             return false;
         }
@@ -89,10 +106,8 @@ namespace SS
         /// </summary>
         protected override IList<string> SetCellContents(string name, double number)
         {
-            //Checks if name is valid
-            if (!(isValidName(name)))
-                throw new InvalidNameException();
 
+            //Removes any possible dependency that the cell had
             IEnumerator<string> dependents = depList.GetDependents(name).GetEnumerator();
             while (dependents.MoveNext())
             {
@@ -102,8 +117,6 @@ namespace SS
             //Either adds a new entry to cell or replaces an existing ones content
             cells.SetCellContent(name, number);
             
-            
-
             //Generates a list of the name and all the variables it is dependent on
             IList<string> variableList = new List<string>();
             IEnumerator<string> variableEnum = GetCellsToRecalculate(name).GetEnumerator();
@@ -111,9 +124,6 @@ namespace SS
             {
                 variableList.Add(variableEnum.Current);
             }
-
-
-
             return variableList;
         }
 
@@ -129,10 +139,8 @@ namespace SS
         /// </summary>
         protected override IList<string> SetCellContents(string name, string text)
         {
-            //Checks if name is valid
-            if (!(isValidName(name)))
-                throw new InvalidNameException();
 
+            //Removes any possible dependency that the cell had
             IEnumerator<string> dependents = depList.GetDependents(name).GetEnumerator();
             while (dependents.MoveNext())
             {
@@ -142,7 +150,6 @@ namespace SS
             //Either puts in a new name and content into cells or replaces an existing names content with new content
             cells.SetCellContent(name, text);
             
-
             //Generates a list of variables of name and its dependees          
             IList<string> variableList = new List<string>();
             IEnumerator<string> variableEnum = GetCellsToRecalculate(name).GetEnumerator();
@@ -150,9 +157,6 @@ namespace SS
             {
                 variableList.Add(variableEnum.Current);
             }
-
-
-
             return variableList;
         }
 
@@ -171,16 +175,19 @@ namespace SS
         /// </summary>
         protected override IList<string> SetCellContents(string name, Formula formula)
         {
-            //Checks if the name is valid
-            if (!(isValidName(name)))
-                throw new InvalidNameException();
-
             //Checks if formula contains name
             if (formula.GetVariables().Contains(name))
                 throw new CircularException();
 
             //Stores the current content in the cell before the change
             Object storedContent = cells.GetCellContent(name);
+
+            //Removes any possible dependency that the cell had
+            IEnumerator<string> dependents = depList.GetDependents(name).GetEnumerator();
+            while (dependents.MoveNext())
+            {
+                depList.RemoveDependency(dependents.Current, name);
+            }
 
             //Either adds a new name and its content to cells or replaces an already existing cells content with new content
             //Then either replaces all variables in deplist with name
@@ -190,7 +197,9 @@ namespace SS
                 depList.AddDependency(name, variable);
             }
 
-            //Generates a list of the name and its dependees
+            //Generates a list of the name and its dependees while checking for any circular exceptions
+            //If a circular exception occurs, replaces new content with old content;
+            //If one doesnt, generate the list, and return it
             IEnumerator<string> variableEnum;
             IList<String> variableList = new List<String>();
             try
@@ -248,7 +257,7 @@ namespace SS
         /// PLEASE NOTE THAT THIS METHOD DEPENDS ON THE ABSTRACT METHOD GetDirectDependents.
         /// IT WON'T WORK UNTIL GetDirectDependents IS IMPLEMENTED CORRECTLY.
         /// </summary>
-        protected IEnumerable<string> GetCellsToRecalculate(string name)
+        protected new IEnumerable<string> GetCellsToRecalculate(string name)
         {
             LinkedList<string> changed = new LinkedList<string>();
             HashSet<string> visited = new HashSet<string>();
@@ -342,6 +351,26 @@ namespace SS
         }
 
         /// <summary>
+        /// A lookup method that looks up any variables in the spreadsheet and makes sure they contain value
+        /// If its a double, return it. If its a formula, get the value of that recursivly. Anything else
+        /// throw an ArgumentException
+        /// </summary>
+        /// <param name="variable"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        private double lookUp(string variable)
+        {
+            Object content = GetCellContents(variable);
+            if (content is Formula)
+                return (double)cells.GetCellValue(variable, lookUp);
+            else if (content is double)
+                return (double)content;
+            else if (content is "")
+                return 0;
+            else
+                throw new ArgumentException();
+        }
+        /// <summary>
         /// If name is invalid, throws an InvalidNameException.
         /// 
         /// Otherwise, returns the value (as opposed to the contents) of the named cell.  The return
@@ -349,7 +378,9 @@ namespace SS
         /// </summary>
         public override object GetCellValue(string name)
         {
-            throw new NotImplementedException();
+            if(isValidName(name) && isValid(name))
+                throw new InvalidNameException();
+            return cells.GetCellValue(name, lookUp);
         }
 
         /// <summary>
@@ -384,7 +415,29 @@ namespace SS
         /// </summary>
         public override IList<string> SetContentsOfCell(string name, string content)
         {
-            throw new NotImplementedException();
+            if(!(isValidName(name)))
+                throw new InvalidNameException();
+            if (content.Contains(name))
+                throw new CircularException();
+            if (Double.TryParse(content, out double n))
+                return SetCellContents(name, n);
+            else if (isFormula(content))
+                return SetCellContents(name, new Formula(content));
+            else
+                return SetCellContents(name, content);
+
+        }
+        /// <summary>
+        /// Private helper method that determine whether a string qualifies as a formula
+        /// </summary>
+        /// <param name="content"></param>
+        /// <returns></returns>
+        private bool isFormula(string content)
+        {
+            if ((Regex.IsMatch(content, @"^[A-Za-z0-9(.]+") && Regex.IsMatch(content, @"[*/+-]")
+                && Regex.IsMatch(content, @"[A-Za-z0-9)]$")) || isValidName(content))
+                return true;
+            return false;
         }
     }
 
@@ -397,13 +450,23 @@ namespace SS
     public class Cell
     {
         Dictionary<string, object> cell;
+        Func<string, bool> isValid;
+        Func<string, string> normalize;
+
 
         /// <summary>
         /// The cell constructor that creates a new dictionary of strings
         /// </summary>
-        public Cell()
+        public Cell() :
+            this(s => true, s => s) 
+        {
+        }
+
+        public Cell(Func<string, bool> isValid, Func<string, string> normalize)
         {
             cell = new Dictionary<string, object>();
+            this.isValid = isValid;
+            this.normalize = normalize;
         }
 
         public Dictionary<string, object> Name
@@ -479,22 +542,23 @@ namespace SS
         /// <param name="name"></param>
         /// <param name="lookup"></param>
         /// <returns></returns>
-        //public object GetCellValue(string name, Func<string, double> lookup)
-        //{
-        //    //Double integer for tryParse
-        //    double n;
+        public object GetCellValue(string name, Func<string, double> lookup)
+        {
 
-        //    //Checks if name is contained in cells, returns empty string otherwise
-        //    if (!cell.ContainsKey(name))
-        //        return "";
-        //    //Checks type of content and returns accordingly
-        //    if (cell[name] is double)
-        //        return (double)cell[name];
-        //    else if (cell[name] is Formula)
-        //        Formula content = new Formula(cell[name].ToString());
-        //        return cell[name].Evaluate(lookup);
-        //    else
-        //        return cell[name];
-        //}
+            //Checks if name is contained in cells, returns empty string otherwise
+            if (!cell.ContainsKey(name))
+                return "";
+            //Checks type of content and returns accordingly
+            if (cell[name] is double)
+                return cell[name];
+            else if (cell[name] is Formula)
+            {
+                Formula content = (Formula)cell[name];
+                return content.Evaluate(lookup);
+            }
+            else
+                return cell[name];
+        }
+
     }
 }
