@@ -335,32 +335,108 @@ namespace SpreadsheetTests
         [TestMethod()]
         [TestCategory("44")]
         [ExpectedException(typeof(CircularException))]
-        private void testSetCellValueCircularException()
+        public void testSetCellValueCircularException()
         {
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "A1");
         }
 
         [TestMethod()]
-        private void testGetCellValueDouble()
+        public void testGetCellValueDouble()
         {
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "3");
-            Assert.AreEqual(3, s.GetCellValue("A1"));
+            Assert.AreEqual(3.0, s.GetCellValue("A1"));
         }
 
         [TestMethod()]
-        [ExpectedException(typeof(FormulaError))]
-        private void testGetCellValueFormula()
+        public void testGetCellValueEmpty()
         {
             Spreadsheet s = new Spreadsheet();
+            Assert.AreEqual("", s.GetCellValue("A1"));
         }
 
         [TestMethod()]
-        [ExpectedException(typeof(CircularException))]
-        private void testGetCellValueInvalidName()
+        public void testGetCellValueFormulaEmptyVariables()
         {
             Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A3", "A1 + A2");
+            Assert.IsInstanceOfType(s.GetCellValue("A3"), typeof(FormulaError));
+        }
+
+        [TestMethod()]
+        public void testGetCellValueString()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "Hello");
+            Assert.AreEqual("Hello", s.GetCellValue("A1"));
+        }
+
+        //[TestMethod()]
+        //public void testGetCellValueStringVariable()
+        //{
+        //    Spreadsheet s = new Spreadsheet();
+        //    s.SetContentsOfCell("A1", "Hello");
+        //    s.SetContentsOfCell("A2", "A1");
+        //    Assert.AreEqual("Hello", s.GetCellValue("A2"));
+        //}
+
+        [TestMethod()]
+        public void testGetCellValueFormulaError()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "3 / 0");
+            Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(InvalidNameException))]
+        public void testGetCellValueInvalidName()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.GetCellValue("Lambda");
+        }
+
+        [TestMethod()]
+        public void testGetCellValueVariable()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "A1");
+            Assert.AreEqual(2.0, s.GetCellValue("A2"));
+        }
+
+        [TestMethod()]
+        public void testGetCellValueFormula()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "3");
+            s.SetContentsOfCell("A3", "A1 + A2");
+            Assert.AreEqual(5.0, s.GetCellValue("A3"));
+        }
+
+        [TestMethod()]
+        public void testGetCellValueFormulaComplex()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "3");
+            s.SetContentsOfCell("A3", "A1 + A2");
+            s.SetContentsOfCell("A4", "A3 * A1");
+            Assert.AreEqual(10.0, s.GetCellValue("A4"));
+        }
+
+        [TestMethod()]
+        public void testGetCellValueFormulaChange()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "3");
+            s.SetContentsOfCell("A3", "A1 + A2");
+            s.SetContentsOfCell("A4", "A3 * A1");
+            s.SetContentsOfCell("A3", "A2");
+            Assert.AreEqual(6.0, s.GetCellValue("A4"));
         }
 
         /// <summary>

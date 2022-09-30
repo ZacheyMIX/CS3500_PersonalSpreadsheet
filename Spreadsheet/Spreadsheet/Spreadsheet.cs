@@ -20,7 +20,7 @@ namespace SS
         string filePath;
 
 
-        public override bool Changed { get => throw new NotImplementedException(); protected set => throw new NotImplementedException(); }
+        public override bool Changed { get; protected set; }
 
 
 
@@ -347,6 +347,7 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
+            Changed = false;
             throw new NotImplementedException();
         }
 
@@ -365,10 +366,10 @@ namespace SS
                 return (double)cells.GetCellValue(variable, lookUp);
             else if (content is double)
                 return (double)content;
-            else if (content is "")
-                return 0;
             else
                 throw new ArgumentException();
+
+                
         }
         /// <summary>
         /// If name is invalid, throws an InvalidNameException.
@@ -378,9 +379,9 @@ namespace SS
         /// </summary>
         public override object GetCellValue(string name)
         {
-            if(isValidName(name) && isValid(name))
-                throw new InvalidNameException();
-            return cells.GetCellValue(name, lookUp);
+            if(isValidName(name) && isValid(name))            
+                return cells.GetCellValue(name, lookUp);
+            throw new InvalidNameException();
         }
 
         /// <summary>
@@ -419,6 +420,7 @@ namespace SS
                 throw new InvalidNameException();
             if (content.Contains(name))
                 throw new CircularException();
+            Changed = true;
             if (Double.TryParse(content, out double n))
                 return SetCellContents(name, n);
             else if (isFormula(content))
