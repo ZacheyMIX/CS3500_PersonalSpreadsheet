@@ -80,8 +80,8 @@ namespace SpreadsheetTests
         public void TestSimpleCircular()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "A2");
-            s.SetContentsOfCell("A2", "A1");
+            s.SetContentsOfCell("A1", "=A2");
+            s.SetContentsOfCell("A2", "=A1");
         }
 
         [TestMethod()]
@@ -90,10 +90,10 @@ namespace SpreadsheetTests
         public void TestComplexCircular()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "A2+A3");
-            s.SetContentsOfCell("A3", "A4+A5");
-            s.SetContentsOfCell("A5", "A6+A7");
-            s.SetContentsOfCell("A7", "A1+A1");
+            s.SetContentsOfCell("A1", "=A2+A3");
+            s.SetContentsOfCell("A3", "=A4+A5");
+            s.SetContentsOfCell("A5", "=A6+A7");
+            s.SetContentsOfCell("A7", "=A1+A1");
         }
 
         [TestMethod()]
@@ -104,10 +104,10 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             try
             {
-                s.SetContentsOfCell("A1", "A2+A3");
+                s.SetContentsOfCell("A1", "=A2+A3");
                 s.SetContentsOfCell("A2", "15");
                 s.SetContentsOfCell("A3", "30");
-                s.SetContentsOfCell("A2", "A3*A1");
+                s.SetContentsOfCell("A2", "=A3*A1");
             }
             catch (CircularException e)
             {
@@ -124,8 +124,8 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             try
             {
-                s.SetContentsOfCell("A1", "A2");
-                s.SetContentsOfCell("A2", "A1");
+                s.SetContentsOfCell("A1", "=A2");
+                s.SetContentsOfCell("A2", "=A1");
             }
             catch (CircularException e)
             {
@@ -227,10 +227,10 @@ namespace SpreadsheetTests
         public void TestSetChain()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "A2+A3");
+            s.SetContentsOfCell("A1", "=A2+A3");
             s.SetContentsOfCell("A2", "6");
-            s.SetContentsOfCell("A3", "A2+A4");
-            s.SetContentsOfCell("A4", "A2+A5");
+            s.SetContentsOfCell("A3", "=A2+A4");
+            s.SetContentsOfCell("A4", "=A2+A5");
             Assert.IsTrue(s.SetContentsOfCell("A5", "82.5").SequenceEqual(new List<string>() { "A5", "A4", "A3", "A1" }));
         }
 
@@ -240,7 +240,7 @@ namespace SpreadsheetTests
         public void TestChangeFtoD()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "A2+A3");
+            s.SetContentsOfCell("A1", "=A2+A3");
             s.SetContentsOfCell("A1", "2.5");
             Assert.AreEqual(2.5, (double)s.GetCellContents("A1"), 1e-9);
         }
@@ -250,7 +250,7 @@ namespace SpreadsheetTests
         public void TestChangeFtoS()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "A2+A3");
+            s.SetContentsOfCell("A1", "=A2+A3");
             s.SetContentsOfCell("A1", "Hello");
             Assert.AreEqual("Hello", (string)s.GetCellContents("A1"));
         }
@@ -261,21 +261,21 @@ namespace SpreadsheetTests
         public void TestStress1()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "B1+B2");
-            s.SetContentsOfCell("B1", "C1-C2");
-            s.SetContentsOfCell("B2", "C3*C4");
-            s.SetContentsOfCell("C1", "D1*D2");
-            s.SetContentsOfCell("C2", "D3*D4");
-            s.SetContentsOfCell("C3", "D5*D6");
-            s.SetContentsOfCell("C4", "D7*D8");
-            s.SetContentsOfCell("D1", "E1");
-            s.SetContentsOfCell("D2", "E1");
-            s.SetContentsOfCell("D3", "E1");
-            s.SetContentsOfCell("D4", "E1");
-            s.SetContentsOfCell("D5", "E1");
-            s.SetContentsOfCell("D6", "E1");
-            s.SetContentsOfCell("D7", "E1");
-            s.SetContentsOfCell("D8", "E1");
+            s.SetContentsOfCell("A1", "=B1+B2");
+            s.SetContentsOfCell("B1", "=C1-C2");
+            s.SetContentsOfCell("B2", "=C3*C4");
+            s.SetContentsOfCell("C1", "=D1*D2");
+            s.SetContentsOfCell("C2", "=D3*D4");
+            s.SetContentsOfCell("C3", "=D5*D6");
+            s.SetContentsOfCell("C4", "=D7*D8");
+            s.SetContentsOfCell("D1", "=E1");
+            s.SetContentsOfCell("D2", "=E1");
+            s.SetContentsOfCell("D3", "=E1");
+            s.SetContentsOfCell("D4", "=E1");
+            s.SetContentsOfCell("D5", "=E1");
+            s.SetContentsOfCell("D6", "=E1");
+            s.SetContentsOfCell("D7", "=E1");
+            s.SetContentsOfCell("D8", "=E1");
             IList<String> cells = s.SetContentsOfCell("E1", "0");
             Assert.IsTrue(new HashSet<string>() { "A1", "B1", "B2", "C1", "C2", "C3", "C4", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8", "E1" }.SetEquals(cells));
         }
@@ -289,7 +289,7 @@ namespace SpreadsheetTests
             for (int i = 1; i < 200; i++)
             {
                 cells.Add("A" + i);
-                Assert.IsTrue(cells.SetEquals(s.SetContentsOfCell("A" + i, "A" + (i + 1))));
+                Assert.IsTrue(cells.SetEquals(s.SetContentsOfCell("A" + i, "=A" + (i + 1))));
             }
         }
 
@@ -300,11 +300,11 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             for (int i = 1; i < 200; i++)
             {
-                s.SetContentsOfCell("A" + i, "A" + (i + 1));
+                s.SetContentsOfCell("A" + i, "=A" + (i + 1));
             }
             try
             {
-                s.SetContentsOfCell("A150", "A50");
+                s.SetContentsOfCell("A150", "=A50");
                 Assert.Fail();
             }
             catch (CircularException)
@@ -319,7 +319,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             for (int i = 0; i < 500; i++)
             {
-                s.SetContentsOfCell("A1" + i, "A1" + (i+1));
+                s.SetContentsOfCell("A1" + i, "=A1" + (i+1));
             }
             LinkedList<string> firstCells = new LinkedList<string>();
             LinkedList<string> lastCells = new LinkedList<string>();
@@ -338,7 +338,7 @@ namespace SpreadsheetTests
         public void testSetCellValueCircularException()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "A1");
+            s.SetContentsOfCell("A1", "=A1");
         }
 
         [TestMethod()]
@@ -360,7 +360,7 @@ namespace SpreadsheetTests
         public void testGetCellValueFormulaEmptyVariables()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A3", "A1 + A2");
+            s.SetContentsOfCell("A3", "=A1 + A2");
             Assert.IsInstanceOfType(s.GetCellValue("A3"), typeof(FormulaError));
         }
 
@@ -372,20 +372,20 @@ namespace SpreadsheetTests
             Assert.AreEqual("Hello", s.GetCellValue("A1"));
         }
 
-        //[TestMethod()]
-        //public void testGetCellValueStringVariable()
-        //{
-        //    Spreadsheet s = new Spreadsheet();
-        //    s.SetContentsOfCell("A1", "Hello");
-        //    s.SetContentsOfCell("A2", "A1");
-        //    Assert.AreEqual("Hello", s.GetCellValue("A2"));
-        //}
+        [TestMethod()]
+        public void testGetCellValueStringVariable()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "Hello");
+            s.SetContentsOfCell("A2", "=A1");
+            Assert.IsInstanceOfType(s.GetCellValue("A2"), typeof(FormulaError));
+        }
 
         [TestMethod()]
         public void testGetCellValueFormulaError()
         {
             Spreadsheet s = new Spreadsheet();
-            s.SetContentsOfCell("A1", "3 / 0");
+            s.SetContentsOfCell("A1", "=3 / 0");
             Assert.IsInstanceOfType(s.GetCellValue("A1"), typeof(FormulaError));
         }
 
@@ -402,7 +402,7 @@ namespace SpreadsheetTests
         {
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "2");
-            s.SetContentsOfCell("A2", "A1");
+            s.SetContentsOfCell("A2", "=A1");
             Assert.AreEqual(2.0, s.GetCellValue("A2"));
         }
 
@@ -412,7 +412,7 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "2");
             s.SetContentsOfCell("A2", "3");
-            s.SetContentsOfCell("A3", "A1 + A2");
+            s.SetContentsOfCell("A3", "=A1 + A2");
             Assert.AreEqual(5.0, s.GetCellValue("A3"));
         }
 
@@ -422,8 +422,8 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "2");
             s.SetContentsOfCell("A2", "3");
-            s.SetContentsOfCell("A3", "A1 + A2");
-            s.SetContentsOfCell("A4", "A3 * A1");
+            s.SetContentsOfCell("A3", "=A1 + A2");
+            s.SetContentsOfCell("A4", "=A3 * A1");
             Assert.AreEqual(10.0, s.GetCellValue("A4"));
         }
 
@@ -433,9 +433,9 @@ namespace SpreadsheetTests
             Spreadsheet s = new Spreadsheet();
             s.SetContentsOfCell("A1", "2");
             s.SetContentsOfCell("A2", "3");
-            s.SetContentsOfCell("A3", "A1 + A2");
-            s.SetContentsOfCell("A4", "A3 * A1");
-            s.SetContentsOfCell("A3", "A2");
+            s.SetContentsOfCell("A3", "=A1 + A2");
+            s.SetContentsOfCell("A4", "=A3 * A1");
+            s.SetContentsOfCell("A3", "=A2");
             Assert.AreEqual(6.0, s.GetCellValue("A4"));
         }
 
@@ -521,6 +521,19 @@ namespace SpreadsheetTests
             return f;
         }
 
-        
+        [TestMethod()]
+        public void testSave()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "3");
+            s.SetContentsOfCell("A3", "=A1 + A2");
+            s.SetContentsOfCell("A4", "=A3 * A1");
+            s.SetContentsOfCell("A3", "=A2");
+            s.Save("test.json");
+            
+        }
+
+
     }
 }

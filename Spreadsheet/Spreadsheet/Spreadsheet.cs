@@ -1,6 +1,7 @@
 ﻿using SpreadsheetUtilities;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace SS
 {
@@ -10,14 +11,19 @@ namespace SS
     /// This class represents a spreadsheet that uses a new cell class, dependency for each cell applicable, and incorporates
     /// the formula class for possible formulas within the cells
     /// </summary>
+    /// 
+    [JsonObject(MemberSerialization.OptIn)]
     public class Spreadsheet : AbstractSpreadsheet
     {
-        DependencyGraph depList;
-        Cell cells;
-        Func<string, string> normalize;
-        Func<string, bool> isValid;
-        string version;
-        string filePath;
+        private DependencyGraph depList;
+
+        
+        readonly string StringForm;
+        [JsonProperty(PropertyName = "Cells")]
+        private Cell cells;
+        private Func<string, string> normalize;
+        private Func<string, bool> isValid;
+        private string version;
 
 
         public override bool Changed { get; protected set; }
@@ -31,6 +37,12 @@ namespace SS
         {
         }
 
+        /// <summary>
+        /// Generates a spreadsheet with defined isValid, normalize functions, and the version of the spreadsheet
+        /// </summary>
+        /// <param name="isValid"></param>
+        /// <param name="normalize"></param>
+        /// <param name="version"></param>
         public Spreadsheet(Func<string, bool> isValid, Func<string, string> normalize, string version) : base(isValid, normalize, version)
         {
             depList = new DependencyGraph();
@@ -38,16 +50,56 @@ namespace SS
             this.isValid = isValid;
             this.normalize = normalize;
             this.version = version;
+            Changed = false;
         }
 
+        /// <summary>
+        /// Generates a spreadsheet from a saved path
+        /// If there any issues reading the file, throws a SpreadsheetReadwriteException
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="isValid"></param>
+        /// <param name="normalize"></param>
+        /// <param name="version"></param>
+        /// <exception cref="SpreadsheetReadWriteException"></exception>
         public Spreadsheet(string filePath, Func<string, bool> isValid, Func<string, string> normalize, string version) : base(isValid, normalize, version)
         {
+            //If file path contains any backward or foward slashes and if the file
+            //does not contain .json, throws SpreadhseetReadWriteException
+            if (Regex.IsMatch(filePath, @"\/") && !(Regex.IsMatch(filePath, @"\.json$")))
+                throw new SpreadsheetReadWriteException("File path provided is invalid");
+            string? JSon;
+
+            //Trys to read and convert the filepath into a JSon string, if it fails
+            //throws a new SpreadsheetReadwriteException
+            try
+            {
+                JSon = File.ReadAllText(filePath);      
+            }
+            catch
+            {
+                throw new SpreadsheetReadWriteException("There was a problem opening and creating the spreadsheet");
+            }
+
+            //
+            Spreadsheet? saved = JsonConvert.DeserializeObject<Spreadsheet>(JSon);
             depList = new DependencyGraph();
             cells = new Cell(isValid, normalize);
-            this.isValid = isValid;
-            this.normalize = normalize;
-            this.version = version;
-            this.filePath = filePath;
+
+            //Checks if version given matches version from saved file
+            if (version != saved.version)
+                throw new SpreadsheetReadWriteException("File version does not match the provided version");
+
+            //Generates spreadsheet from saved file
+            IEnumerator<string> savedCells = saved.GetNamesOfAllNonemptyCells().GetEnumerator();
+            while (savedCells.MoveNext())
+            {
+                string currentName = savedCells.Current;
+                SetContentsOfCell(currentName, saved.cells.GetCellContent(currentName).ToString());
+            }
+            //Ensures no change has been made since creation
+            Changed = false;
+
         }
 
         /// <summary>
@@ -70,6 +122,7 @@ namespace SS
         /// Otherwise, returns the contents (as opposed to the value) of the named cell.  The return
         /// value should be either a string, a double, or a Formula.
         /// </summary>
+        /// 
         public override object GetCellContents(string name)
         {
             //Checks if name is valid
@@ -84,7 +137,6 @@ namespace SS
         /// <summary>
         /// Enumerates the names of all the non-empty cells in the spreadsheet.
         /// </summary>
-
         public override IEnumerable<string> GetNamesOfAllNonemptyCells()
         {
             foreach(string name in cells.Name.Keys)
@@ -347,8 +399,25 @@ namespace SS
         /// </summary>
         public override void Save(string filename)
         {
+            //Makes sure the filename is a .JSON
+            if (!(Regex.IsMatch(filename, @"\.json$")))
+                throw new SpreadsheetReadWriteException("File is not a .Json file");
+
+            //Attempts to write the file in JSon, saves it, and changes Change to false
+            //Otherwise throws a SpreadsheetReadWriteException
+            try {
+                string asJson = JsonConvert.SerializeObject(this);
+                File.WriteAllText(filename, asJson);
+                Console.WriteLine(asJson);
+            }
+            catch
+            {
+                throw new SpreadsheetReadWriteException("File contained either Formula Errors or Circular Exceptions");
+            }
+            //Ensures changes since save is false
             Changed = false;
-            throw new NotImplementedException();
+            
+
         }
 
         /// <summary>
@@ -362,6 +431,7 @@ namespace SS
         private double lookUp(string variable)
         {
             Object content = GetCellContents(variable);
+
             if (content is Formula)
                 return (double)cells.GetCellValue(variable, lookUp);
             else if (content is double)
@@ -371,6 +441,7 @@ namespace SS
 
                 
         }
+
         /// <summary>
         /// If name is invalid, throws an InvalidNameException.
         /// 
@@ -416,15 +487,22 @@ namespace SS
         /// </summary>
         public override IList<string> SetContentsOfCell(string name, string content)
         {
+            //Checks valididaty of name
             if(!(isValidName(name)))
                 throw new InvalidNameException();
+
+            //Checks if name is contained within content
             if (content.Contains(name))
                 throw new CircularException();
+
+            //Sets change in spreadsheet to true
             Changed = true;
+
+            //Checks the type of content
             if (Double.TryParse(content, out double n))
                 return SetCellContents(name, n);
             else if (isFormula(content))
-                return SetCellContents(name, new Formula(content));
+                return SetCellContents(name, new Formula(content.Remove(0, 1)));
             else
                 return SetCellContents(name, content);
 
@@ -436,8 +514,7 @@ namespace SS
         /// <returns></returns>
         private bool isFormula(string content)
         {
-            if ((Regex.IsMatch(content, @"^[A-Za-z0-9(.]+") && Regex.IsMatch(content, @"[*/+-]")
-                && Regex.IsMatch(content, @"[A-Za-z0-9)]$")) || isValidName(content))
+            if ((Regex.IsMatch(content, @"^=")))
                 return true;
             return false;
         }
@@ -449,26 +526,28 @@ namespace SS
     /// Content consists of a string, a double, or a Formula
     /// Value consists of a string, a double, or a FormulaError
     /// </summary>
+    /// 
     public class Cell
     {
-        Dictionary<string, object> cell;
-        Func<string, bool> isValid;
-        Func<string, string> normalize;
+        private string name;
+        private object content;
+        private Dictionary<string, object> cell;
+        private Func<string, bool> isValid;
+        private Func<string, string> normalize;
+        [JsonProperty("String Form")]
+        private string stringForm;
+
 
 
         /// <summary>
         /// The cell constructor that creates a new dictionary of strings
         /// </summary>
-        public Cell() :
-            this(s => true, s => s) 
-        {
-        }
-
         public Cell(Func<string, bool> isValid, Func<string, string> normalize)
         {
             cell = new Dictionary<string, object>();
             this.isValid = isValid;
             this.normalize = normalize;
+            stringForm = "";
         }
 
         public Dictionary<string, object> Name
@@ -483,6 +562,7 @@ namespace SS
         /// <param name="text"></param>
         public void SetCellContent(string name, string text)
         {
+            stringForm = text;
             if (cell.ContainsKey(name))
                 cell[name] = text;
             else
@@ -496,6 +576,7 @@ namespace SS
         /// <param name="num"></param>
         public void SetCellContent(string name, double num)
         {
+            stringForm = "=" + num.ToString();
             if (cell.ContainsKey(name))
                 cell[name] = num;
             else
@@ -509,6 +590,7 @@ namespace SS
         /// <param name="formula"></param>
         public void SetCellContent(string name, Formula formula)
         {
+            stringForm = "=" + formula.ToString();
             if (cell.ContainsKey(name))
                 cell[name] = formula;
             else
@@ -527,14 +609,7 @@ namespace SS
             if (!cell.ContainsKey(name))
                 return "";
 
-            object test = cell[name];
-            //Checks type of content and returns accordingly
-            if (cell[name] is Double)
-                return (Double) cell[name];
-            else if (cell[name] is Formula)
-                return (Formula) cell[name];
-            else
-                return (String) cell[name];
+            return cell[name];
         }
 
         /// <summary>
