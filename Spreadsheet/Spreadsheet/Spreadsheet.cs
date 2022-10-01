@@ -18,8 +18,8 @@ namespace SS
         private DependencyGraph depList;
         [JsonProperty(PropertyName = "Cells")]
         private Dictionary<string, Cell> cells;
-        private Func<string, string>? normalize;
-        private Func<string, bool>? isValid;
+        private Func<string, string> normalize;
+        private Func<string, bool> isValid;
         private string version;
 
 
@@ -73,7 +73,7 @@ namespace SS
             //throws a new SpreadsheetReadwriteException
             try
             {
-                JSon = File.ReadAllText(filename);      
+                JSon = File.ReadAllText(filename);
             }
             catch
             {
@@ -89,18 +89,20 @@ namespace SS
             this.version = version;
 
             //Checks if version given matches version from saved file
-            if (version != saved.version)
-                throw new SpreadsheetReadWriteException("File version does not match the provided version");
-
-            //Generates spreadsheet from saved file
-            IEnumerator<string> savedCells = saved.StringFormSet().GetEnumerator();
-            while (savedCells.MoveNext())
+            if (saved is not null && version == saved.version)
             {
-                string currentName = savedCells.Current;
-                SetContentsOfCell(currentName, saved.GetFormSet(currentName));
+                //Generates spreadsheet from saved file
+                IEnumerator<string> savedCells = saved.StringFormSet().GetEnumerator();
+                while (savedCells.MoveNext())
+                {
+                    string currentName = savedCells.Current;
+                    SetContentsOfCell(currentName, saved.GetFormSet(currentName));
+                }
+                //Ensures no change has been made since creation
+                Changed = false;
             }
-            //Ensures no change has been made since creation
-            Changed = false;
+            else
+                throw new SpreadsheetReadWriteException("File version does not match the provided version");
 
         }
 
@@ -590,11 +592,28 @@ namespace SS
         /// <param name="text"></param>
         public void SetCellContent(object content)
         {
+            if(content is null)
+            {
+                throw new ArgumentException();
+            }
             if (content is Formula)
+            {
                 StringForm = "=" + content.ToString();
+                this.content = content;
+            }    
+            else if(content is Double)
+            {
+                double d = (double)content;
+                StringForm = d.ToString();
+                this.content = content;
+            }
             else
-                StringForm = content.ToString();
-            this.content = content;
+            {
+                StringForm = (string) content;
+                this.content = content;
+            }
+
+            
         }
 
         /// <summary>
