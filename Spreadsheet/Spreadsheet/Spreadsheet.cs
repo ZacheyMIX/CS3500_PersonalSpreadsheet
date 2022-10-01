@@ -529,14 +529,9 @@ namespace SS
     /// 
     public class Cell
     {
-        private string name;
         private object content;
-        private Dictionary<string, object> cell;
         private Func<string, bool> isValid;
         private Func<string, string> normalize;
-        [JsonProperty("String Form")]
-        private string stringForm;
-
 
 
         /// <summary>
@@ -544,15 +539,18 @@ namespace SS
         /// </summary>
         public Cell(Func<string, bool> isValid, Func<string, string> normalize)
         {
-            cell = new Dictionary<string, object>();
+            content = new object();
+            this.content = "";
             this.isValid = isValid;
             this.normalize = normalize;
-            stringForm = "";
         }
 
-        public Dictionary<string, object> Name
+        public override string ToString()
         {
-            get { return cell; }
+            if (content is Formula)
+                return "=" + this.content.ToString();
+            else
+                return (string) this.content;
         }
 
         /// <summary>
@@ -560,41 +558,9 @@ namespace SS
         /// </summary>
         /// <param name="name"></param>
         /// <param name="text"></param>
-        public void SetCellContent(string name, string text)
+        public void SetCellContent(object content)
         {
-            stringForm = text;
-            if (cell.ContainsKey(name))
-                cell[name] = text;
-            else
-                cell.Add(name, text);
-        }
-
-        /// <summary>
-        /// Sets the named cells content if a double is passed in 
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="num"></param>
-        public void SetCellContent(string name, double num)
-        {
-            stringForm = "=" + num.ToString();
-            if (cell.ContainsKey(name))
-                cell[name] = num;
-            else
-                cell.Add(name, num);
-        }
-
-        /// <summary>
-        /// Sets the named cells content if a Formula is passed in
-        /// </summary>
-        /// <param name="name"></param>
-        /// <param name="formula"></param>
-        public void SetCellContent(string name, Formula formula)
-        {
-            stringForm = "=" + formula.ToString();
-            if (cell.ContainsKey(name))
-                cell[name] = formula;
-            else
-                cell.Add(name, formula);
+            content = this.content;
         }
 
         /// <summary>
@@ -603,13 +569,9 @@ namespace SS
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public object GetCellContent(string name)
+        public object GetCellContent()
         {
-            //Checks if name is contained in cells, returns empty string otherwise
-            if (!cell.ContainsKey(name))
-                return "";
-
-            return cell[name];
+            return this.content;
         }
 
         /// <summary>
@@ -619,22 +581,15 @@ namespace SS
         /// <param name="name"></param>
         /// <param name="lookup"></param>
         /// <returns></returns>
-        public object GetCellValue(string name, Func<string, double> lookup)
+        public object GetCellValue(Func<string, double> lookup)
         {
-
-            //Checks if name is contained in cells, returns empty string otherwise
-            if (!cell.ContainsKey(name))
-                return "";
-            //Checks type of content and returns accordingly
-            if (cell[name] is double)
-                return cell[name];
-            else if (cell[name] is Formula)
+            if (content is Formula)
             {
-                Formula content = (Formula)cell[name];
+                Formula content = (Formula)this.content;
                 return content.Evaluate(lookup);
             }
             else
-                return cell[name];
+                return this.content;
         }
 
     }
