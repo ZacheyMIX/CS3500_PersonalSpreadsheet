@@ -531,9 +531,73 @@ namespace SpreadsheetTests
             s.SetContentsOfCell("A4", "=A3 * A1");
             s.SetContentsOfCell("A3", "=A2");
             s.Save("test.json");
+            File.Delete("test.json");
             
         }
 
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void testSaveInvalidName()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.Save("test.john");
+            File.Delete("test.john");
 
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void testSaveInvalidNamePath()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.Save("src/test.john");
+            File.Delete("test.json");
+
+        }
+
+        [TestMethod()]
+        public void testLoadSavedSpreadSheet()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "3");
+            s.SetContentsOfCell("A3", "=A1 + A2");
+            s.SetContentsOfCell("A4", "=A3 * A1");
+            s.SetContentsOfCell("A3", "=A2");
+            s.Save("test.json");
+            Spreadsheet t = new Spreadsheet("test.json", s => true, s => s, "default");
+            File.Delete("test.json");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void testLoadSavedInvalidNamePath()
+        {
+            Spreadsheet t = new Spreadsheet("src/test.json", s => true, s => s, "default");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void testLoadSavedInvalidName()
+        {
+            Spreadsheet t = new Spreadsheet("test.jhon", s => true, s => s, "default");
+        }
+
+        [TestMethod()]
+        [ExpectedException(typeof(SpreadsheetReadWriteException))]
+        public void testLoadSavedInvalidVersion()
+        {
+            Spreadsheet s = new Spreadsheet();
+            s.SetContentsOfCell("A1", "2");
+            s.SetContentsOfCell("A2", "3");
+            s.SetContentsOfCell("A3", "=A1 + A2");
+            s.SetContentsOfCell("A4", "=A3 * A1");
+            s.SetContentsOfCell("A3", "=A2");
+            s.Save("test.json");
+            Spreadsheet t = new Spreadsheet("test.json", s => true, s => s, "2016");
+            File.Delete("test.json");
+        }
     }
 }
