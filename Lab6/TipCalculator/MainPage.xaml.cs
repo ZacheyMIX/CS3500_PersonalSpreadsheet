@@ -2,12 +2,10 @@
 
 public partial class MainPage : ContentPage
 {
-	int count = 0;
 
 	public MainPage()
 	{
 		InitializeComponent();
-		CalculateBtn.IsEnabled = false;
 	}
 
 	private void OnCounterClicked(object sender, EventArgs e)
@@ -15,7 +13,7 @@ public partial class MainPage : ContentPage
 		double tip;
 		double bill;
 
-		if(Double.TryParse(BillAmount.Text, out bill) && Double.TryParse(TipAmount.Text, out tip))
+		if(Double.TryParse(BillAmount.Text, out bill) && Double.TryParse(TipPercent.Text, out tip))
 		{
             double tipCalc = bill * tip;
 			double totalCalc = tipCalc + bill;
@@ -29,7 +27,7 @@ public partial class MainPage : ContentPage
 		double tip;
 		double bill;
 
-        if (Double.TryParse(BillAmount.Text, out bill) && Double.TryParse(TipAmount.Text, out tip))
+        if (Double.TryParse(BillAmount.Text, out bill) && Double.TryParse(TipPercent.Text, out tip))
         {
 			CalculateBtn.IsEnabled = true;
         }

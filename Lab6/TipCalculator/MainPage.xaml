@@ -13,17 +13,18 @@
                 Text="Enter Total Bill"
                 SemanticProperties.HeadingLevel="Level1"
                 FontSize="32"
-                HorizontalOptions="Center" />
+                HorizontalOptions="Center"/>
 
             <Entry 
                 x:Name="BillAmount"
                 Text= "Bill amount goes here"
-                SizeChanged=""/>
+                TextChanged="OnTextChanged"
+                />
 
             <Entry 
                 x:Name="TipPercent"
                 Text= "Tip Percent goes here" 
-                Textchanged=""/>
+                TextChanged="OnTextChanged"/>
 
             <Button
                 x:Name="CalculateBtn"

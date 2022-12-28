@@ -1,29 +1,35 @@
 ﻿using FormulaEvaluator;
 class test
 {
-
     /**
      * This method will lookup variable names and check its value. If no value exists, throw an IllegalArgument
      */
-    public static int simpleLookUp(String x)
+    public static int headsOrTails()
     {
-        if (x == "a4")
-        {
-            return 3;
-        }
-        else if (x == "x2")
-        {
-            return 2;
-        }
-        else
-            throw new ArgumentException("Unknown Variable");
+        Random random = new Random();
+        return random.Next(2);
     }
 
+    public static void result(int times)
+    {
+        int heads = 0;
+        for(int i = 0; i < times; i++)
+        {
+            for (int j = 0; j < 20; j++)
+            {
+                if (headsOrTails() == 0)
+                    heads++;
+            }
+            Console.WriteLine(heads);
+            heads = 0;
+        }
+        
+
+    }
 
     public static void Main(string[] args)
     {
-        Evaluator.Evaluate("32+3", simpleLookUp);
-
+        result(20);
     }
 
 }
